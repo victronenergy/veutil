@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SettingLoadingExampleGui</class>
+ <widget class="QWidget" name="SettingLoadingExampleGui">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>719</width>
+    <height>498</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <widget class="QPushButton" name="btnLoadFakeSettings">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>79</y>
+     <width>331</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Load fake save settings</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnCommit">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>110</y>
+     <width>331</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Commit Settings</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnDiscard">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>140</y>
+     <width>331</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Discard Settings</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

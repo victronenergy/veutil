@@ -1,5 +1,6 @@
 #include <veutil/qt/ve_qitems_mqtt.hpp>
 
+#include <QRandomGenerator>
 #include <QJsonDocument>
 #include <QJsonObject>
 
@@ -33,14 +34,27 @@ VeQItemMqttProducer *VeQItemMqtt::mqttProducer() const
 //--
 
 VeQItemMqttProducer::VeQItemMqttProducer(
-		VeQItem *root, const QString &id, QObject *parent)
+		VeQItem *root, const QString &id, const QString &clientIdPrefix, QObject *parent)
 	: VeQItemProducer(root, id, parent),
 	  mMqttConnection(nullptr),
 	  mConnectionState(Idle),
 	  mAutoReconnectAttemptCounter(0),
-	  mAutoReconnectMaxAttempts(3),
+	  mAutoReconnectMaxAttempts(sizeof(mReconnectAttemptIntervals)/sizeof(mReconnectAttemptIntervals[0])),
 	  mError(QMqttClient::NoError)
 {
+	// Create a sanitized clientId.  MQTT v3.1 spec states that the clientId must be
+	// between 1 and 23 characters, and some brokers support [a-z][A-Z][0-9] only.
+	const quint64 uniqueId = QRandomGenerator::global()->generate64();
+	mClientId = QStringLiteral("%1").arg(uniqueId, 16, 16, QLatin1Char('0'));
+	for (const QChar &c : clientIdPrefix) {
+		if (mClientId.size() < 23 &&
+				((c >= 'a' && c <= 'z')
+				|| (c >= 'A' && c <= 'Z')
+				|| (c >= '0' && c <= '9'))) {
+			mClientId.prepend(c);
+		}
+	}
+
 	mKeepAliveTimer.setInterval(1000 * 30);
 	connect(&mKeepAliveTimer, &QTimer::timeout,
 		this, &VeQItemMqttProducer::doKeepAlive);
@@ -62,6 +76,7 @@ bool VeQItemMqttProducer::open(
 	}
 
 	mMqttConnection = new QMqttClient(this);
+	mMqttConnection->setClientId(mClientId);
 	mAutoReconnectAttemptCounter = 0;
 
 	connect(mMqttConnection, &QMqttClient::connected,
@@ -76,15 +91,13 @@ bool VeQItemMqttProducer::open(
 	mWebSocket = new WebSocketDevice(mMqttConnection);
 	mWebSocket->setUrl(url);
 	mWebSocket->setProtocol(
-		  protocolVersion == QMqttClient::MQTT_3_1 ? "mqttv3.1"
-		: protocolVersion == QMqttClient::MQTT_3_1_1 ? "mqttv3.11"
-		: "mqtt");
+		  protocolVersion == QMqttClient::MQTT_3_1 ? "mqttv3.1" : "mqtt");
 
 	connect(mWebSocket, &WebSocketDevice::connected,
 		this, [this, protocolVersion] {
 			mMqttConnection->setProtocolVersion(protocolVersion);
 			mMqttConnection->setTransport(mWebSocket, QMqttClient::IODevice);
-			QMetaObject::invokeMethod(this, [this] { continueOpen(); }, Qt::QueuedConnection);
+			QMetaObject::invokeMethod(this, [this] { aboutToConnect(); }, Qt::QueuedConnection);
 		});
 	connect(mWebSocket, &WebSocketDevice::disconnected,
 		this, [this] {
@@ -107,6 +120,7 @@ bool VeQItemMqttProducer::open(const QHostAddress &host, int port)
 	}
 
 	mMqttConnection = new QMqttClient(this);
+	mMqttConnection->setClientId(mClientId);
 	mMqttConnection->setHostname(host.toString());
 	mMqttConnection->setPort(port);
 
@@ -120,15 +134,31 @@ bool VeQItemMqttProducer::open(const QHostAddress &host, int port)
 		this, &VeQItemMqttProducer::onMessageReceived);
 
 	mAutoReconnectAttemptCounter = 0;
-	QMetaObject::invokeMethod(this, [this] { continueOpen(); }, Qt::QueuedConnection);
+	QMetaObject::invokeMethod(this, [this] { aboutToConnect(); }, Qt::QueuedConnection);
 	setConnectionState(Connecting);
 	return true;
 }
 
-void VeQItemMqttProducer::continueOpen()
+// Clients should call this method in their aboutToConnect() handler,
+// prior to calling continueConnect().  This is because the VRM token may
+// change and so during reconnect, they will need to update the credentials.
+void VeQItemMqttProducer::setCredentials(const QString &username, const QString &password)
 {
-	mMqttConnection->setCleanSession(true);
-	mMqttConnection->connectToHost();
+	if (mMqttConnection) {
+		mMqttConnection->setUsername(username);
+		mMqttConnection->setPassword(password);
+	}
+}
+
+void VeQItemMqttProducer::continueConnect()
+{
+	// Use a queued connection to ensure that any client previously
+	// deleteLater()'d will have been properly destroyed, to avoid
+	// race condition where we might have two connections active.
+	QMetaObject::invokeMethod(this, [this] {
+		mMqttConnection->setCleanSession(true);
+		mMqttConnection->connectToHost();
+	}, Qt::QueuedConnection);
 }
 
 void VeQItemMqttProducer::onConnected()
@@ -137,7 +167,7 @@ void VeQItemMqttProducer::onConnected()
 	setConnectionState(Connected);
 
 	if (mPortalId.isEmpty()) {
-		mMqttConnection->subscribe(QStringLiteral("#"));
+		mMqttConnection->subscribe(QStringLiteral("N/+/system/0/Serial"));
 	} else {
 		mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
 	}
@@ -151,9 +181,11 @@ void VeQItemMqttProducer::onDisconnected()
 	mKeepAliveTimer.stop();
 
 	if (mAutoReconnectAttemptCounter < mAutoReconnectMaxAttempts) {
+		// Attempt to reconnect.  We use a staggered exponential backoff interval.
 		setConnectionState(Reconnecting);
-		QTimer::singleShot(2000, this, &VeQItemMqttProducer::continueOpen);
-		mAutoReconnectAttemptCounter++;
+		const int interval = mReconnectAttemptIntervals[mAutoReconnectAttemptCounter++];
+		QTimer::singleShot(interval + QRandomGenerator::global()->bounded(interval/2),
+				this, &VeQItemMqttProducer::aboutToConnect);
 	} else {
 		setConnectionState(Failed);
 	}
@@ -175,7 +207,7 @@ void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMq
 			const QJsonObject payload = QJsonDocument::fromJson(message).object();
 			if (parts.length() == 5 && parts[1] == payload.value(QStringLiteral("value")).toString()) {
 				mPortalId = parts[1];
-				mMqttConnection->unsubscribe(QStringLiteral("#"));
+				mMqttConnection->unsubscribe(QStringLiteral("N/+/system/0/Serial"));
 				mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
 				doKeepAlive();
 			} else {

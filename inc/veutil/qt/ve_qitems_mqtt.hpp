@@ -54,7 +54,7 @@ public:
 	};
 	Q_ENUM(ConnectionState)
 
-	VeQItemMqttProducer(VeQItem *root, const QString &id, QObject *parent = nullptr);
+	VeQItemMqttProducer(VeQItem *root, const QString &id, const QString &clientIdPrefix, QObject *parent = nullptr);
 
 	VeQItem *createItem() override;
 
@@ -67,6 +67,7 @@ public:
 #endif // MQTT_WEBSOCKETS_ENABLED
 
 	QMqttClient *mqttConnection() const;
+	void setCredentials(const QString &username, const QString &password);
 	bool publishValue(const QString &uid, const QVariant &value);
 	ConnectionState connectionState() const;
 	QMqttClient::ClientError error() const;
@@ -76,6 +77,10 @@ Q_SIGNALS:
 	void errorChanged();
 	void messageReceived(const QString &path, const QVariant &value);
 	void nullMessageReceived(const QString &path);
+	void aboutToConnect(); // client should handle this by calling setCredentials() and calling continueConnect
+
+public Q_SLOTS:
+	void continueConnect();
 
 private Q_SLOTS:
 	void onConnected();
@@ -85,7 +90,6 @@ private Q_SLOTS:
 	void doKeepAlive();
 
 private:
-	void continueOpen();
 	void setConnectionState(ConnectionState connectionState);
 	void setError(QMqttClient::ClientError error);
 	void parseMessage(const QString &path, const QByteArray &message);
@@ -95,8 +99,10 @@ private:
 #ifdef MQTT_WEBSOCKETS_ENABLED
 	WebSocketDevice *mWebSocket = nullptr;
 #endif // MQTT_WEBSOCKETS_ENABLED
+	QString mClientId;
 	QString mPortalId;
 	ConnectionState mConnectionState;
+	const int mReconnectAttemptIntervals[6] = { 250, 1000, 2000, 5000, 10000, 30000 };
 	quint16 mAutoReconnectAttemptCounter;
 	const quint16 mAutoReconnectMaxAttempts;
 	QMqttClient::ClientError mError;

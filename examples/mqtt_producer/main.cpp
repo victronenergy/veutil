@@ -27,7 +27,12 @@ int main(int argc, char *argv[])
 	QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/main.qml")));
 
 	bool running = false;
-	VeQItemMqttProducer producer(VeQItems::getRoot(), QStringLiteral("mqtt"));
+	VeQItemMqttProducer producer(VeQItems::getRoot(), QStringLiteral("mqtt"), QStringLiteral("example"));
+	QObject::connect(&producer, &VeQItemMqttProducer::aboutToConnect,
+		[&producer] {
+			producer.setCredentials(QString(), QString());
+			producer.continueConnect();
+		});
 	QObject::connect(&producer, &VeQItemMqttProducer::connectionStateChanged,
 		[&running, &producer] {
 			if (producer.connectionState() == VeQItemMqttProducer::Ready) {

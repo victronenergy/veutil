@@ -179,6 +179,7 @@ void VeQItemMqttProducer::onDisconnected()
 {
 	setConnectionState(Disconnected);
 	mKeepAliveTimer.stop();
+	mMessageQueue.clear();
 
 	if (mAutoReconnectAttemptCounter < mAutoReconnectMaxAttempts) {
 		// Attempt to reconnect.  We use a staggered exponential backoff interval.
@@ -223,14 +224,28 @@ void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMq
 				// ignore keepalive topic.
 			} else {
 				// we have a topic message which we need to expose via VeQItem.
-				// invoke the parse method via a QueuedConnection to ensure
+				// service the queue via a QueuedConnection to ensure
 				// that we don't block the UI.
 				const QString path = topicName.mid(notificationPrefix.size() + 1);
-				QMetaObject::invokeMethod(this, [this, path, message] {
-					parseMessage(path, message);
-				}, Qt::QueuedConnection);
+				mMessageQueue.enqueue(QPair<QString, QByteArray>(path, message));
+				if (mMessageQueue.size() == 1) {
+					QMetaObject::invokeMethod(this, [this] {
+						serviceQueue();
+					}, Qt::QueuedConnection);
+				}
 			}
 		}
+	}
+}
+
+void VeQItemMqttProducer::serviceQueue()
+{
+	if (mMessageQueue.size()) {
+		const QPair<QString, QByteArray> message = mMessageQueue.dequeue();
+		parseMessage(message.first, message.second);
+		QMetaObject::invokeMethod(this, [this] {
+			serviceQueue();
+		}, Qt::QueuedConnection);
 	}
 }
 
@@ -258,7 +273,6 @@ void VeQItemMqttProducer::doKeepAlive()
 	if (mMqttConnection
 			&& mMqttConnection->state() == QMqttClient::Connected
 			&& !mPortalId.isEmpty()) {
-		// TODO: just specific topics?  Or all topics as done here?
 		setConnectionState(Ready);
 		mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)), QByteArray());
 	}

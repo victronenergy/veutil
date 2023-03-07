@@ -43,6 +43,7 @@ class VeQItemMqttProducer : public VeQItemProducer
 	Q_OBJECT
 	Q_PROPERTY(ConnectionState connectionState READ connectionState NOTIFY connectionStateChanged)
 	Q_PROPERTY(QMqttClient::ClientError error READ error NOTIFY errorChanged)
+	Q_PROPERTY(QString portalId READ portalId WRITE setPortalId NOTIFY portalIdChanged)
 
 public:
 
@@ -75,9 +76,13 @@ public:
 	ConnectionState connectionState() const;
 	QMqttClient::ClientError error() const;
 
+	QString portalId() const;
+	void setPortalId(const QString &portalId);
+
 Q_SIGNALS:
 	void connectionStateChanged();
 	void errorChanged();
+	void portalIdChanged();
 	void messageReceived(const QString &path, const QVariant &value);
 	void nullMessageReceived(const QString &path);
 	void aboutToConnect(); // client should handle this by calling setCredentials() and calling continueConnect
@@ -111,6 +116,7 @@ private:
 	quint16 mAutoReconnectAttemptCounter;
 	const quint16 mAutoReconnectMaxAttempts;
 	QMqttClient::ClientError mError;
+	bool mReceivedMessage;
 };
 
 #ifdef MQTT_WEBSOCKETS_ENABLED

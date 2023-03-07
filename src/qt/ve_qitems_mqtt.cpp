@@ -40,20 +40,21 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 	  mConnectionState(Idle),
 	  mAutoReconnectAttemptCounter(0),
 	  mAutoReconnectMaxAttempts(sizeof(mReconnectAttemptIntervals)/sizeof(mReconnectAttemptIntervals[0])),
-	  mError(QMqttClient::NoError)
+	  mError(QMqttClient::NoError),
+	  mReceivedMessage(false)
 {
 	// Create a sanitized clientId.  MQTT v3.1 spec states that the clientId must be
 	// between 1 and 23 characters, and some brokers support [a-z][A-Z][0-9] only.
-	const quint64 uniqueId = QRandomGenerator::global()->generate64();
-	mClientId = QStringLiteral("%1").arg(uniqueId, 16, 16, QLatin1Char('0'));
 	for (const QChar &c : clientIdPrefix) {
-		if (mClientId.size() < 23 &&
+		if (mClientId.size() < (23 - 16) &&
 				((c >= 'a' && c <= 'z')
 				|| (c >= 'A' && c <= 'Z')
 				|| (c >= '0' && c <= '9'))) {
-			mClientId.prepend(c);
+			mClientId.append(c);
 		}
 	}
+	const quint64 uniqueId = QRandomGenerator::global()->generate64();
+	mClientId.append(QStringLiteral("%1").arg(uniqueId, 16, 16, QLatin1Char('0')));
 
 	mKeepAliveTimer.setInterval(1000 * 30);
 	connect(&mKeepAliveTimer, &QTimer::timeout,
@@ -170,6 +171,8 @@ void VeQItemMqttProducer::onConnected()
 		mMqttConnection->subscribe(QStringLiteral("N/+/system/0/Serial"));
 	} else {
 		mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
+		mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/system/0/Serial").arg(mPortalId)), QByteArray());
+		doKeepAlive();
 	}
 
 	mKeepAliveTimer.start();
@@ -180,6 +183,7 @@ void VeQItemMqttProducer::onDisconnected()
 	setConnectionState(Disconnected);
 	mKeepAliveTimer.stop();
 	mMessageQueue.clear();
+	mReceivedMessage = false;
 
 	if (mAutoReconnectAttemptCounter < mAutoReconnectMaxAttempts) {
 		// Attempt to reconnect.  We use a staggered exponential backoff interval.
@@ -207,7 +211,7 @@ void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMq
 			const QStringList parts = topicName.split('/');
 			const QJsonObject payload = QJsonDocument::fromJson(message).object();
 			if (parts.length() == 5 && parts[1] == payload.value(QStringLiteral("value")).toString()) {
-				mPortalId = parts[1];
+				setPortalId(parts[1]);
 				mMqttConnection->unsubscribe(QStringLiteral("N/+/system/0/Serial"));
 				mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
 				doKeepAlive();
@@ -234,6 +238,12 @@ void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMq
 					}, Qt::QueuedConnection);
 				}
 			}
+		}
+
+		// Once we have received a message, transition to Ready state.
+		if (!mReceivedMessage) {
+			mReceivedMessage = true;
+			doKeepAlive();
 		}
 	}
 }
@@ -273,7 +283,9 @@ void VeQItemMqttProducer::doKeepAlive()
 	if (mMqttConnection
 			&& mMqttConnection->state() == QMqttClient::Connected
 			&& !mPortalId.isEmpty()) {
-		setConnectionState(Ready);
+		if (mReceivedMessage) {
+			setConnectionState(Ready);
+		}
 		mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)), QByteArray());
 	}
 }
@@ -301,6 +313,19 @@ void VeQItemMqttProducer::setError(QMqttClient::ClientError error)
 	if (mError != error) {
 		mError = error;
 		emit errorChanged();
+	}
+}
+
+QString VeQItemMqttProducer::portalId() const
+{
+	return mPortalId;
+}
+
+void VeQItemMqttProducer::setPortalId(const QString &portalId)
+{
+	if (mPortalId != portalId) {
+		mPortalId = portalId;
+		emit portalIdChanged();
 	}
 }
 

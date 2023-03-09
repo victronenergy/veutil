@@ -208,6 +208,9 @@ void VeQItem::produceValue(QVariant variant, State state, bool forceChanged)
 	mState = state;
 	mValue = variant;
 
+	if (mValue.isValid())
+		mLastValidValue = mValue;
+
 	if (!mSeen && state == VeQItem::Synchronized) {
 		mSeen = true;
 		emit seenChanged();
@@ -239,6 +242,9 @@ void VeQItem::produceText(QString text, VeQItem::State state)
 
 	mTextState = state;
 	mText = text;
+
+	if (!mText.isNull())
+		mLastValidText = mText;
 
 	if (stateIsChanged)
 		emit textStateChanged(state);

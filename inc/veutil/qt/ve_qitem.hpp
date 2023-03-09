@@ -64,7 +64,9 @@ class VE_QITEM_EXPORT VeQItem : public QObject
 	Q_OBJECT
 	Q_ENUMS(State)
 	Q_PROPERTY(QVariant value READ getValue NOTIFY valueChanged WRITE setValue)
+	Q_PROPERTY(QVariant lastValidValue READ getLastValidValue NOTIFY valueChanged)
 	Q_PROPERTY(QString text READ getText NOTIFY textChanged)
+	Q_PROPERTY(QString lastValidText READ getLastValidText NOTIFY textChanged)
 	Q_PROPERTY(bool seen READ getSeen NOTIFY seenChanged)
 	Q_PROPERTY(QString uid READ uniqueId CONSTANT)
 	Q_PROPERTY(QString id READ id CONSTANT)
@@ -109,6 +111,10 @@ public:
 		return mValue;
 	}
 
+	// the last valid value before a service / connection disappeared can be useful
+	// e.g. the product name / firmware version etc of what has disappeared.
+	QVariant getLastValidValue() { return mLastValidValue; }
+
 	/**
 	 * Returns the locally stored value without requesting it when not available.
 	 * This is especially usefull in logging, where it is not desireable to change
@@ -131,6 +137,8 @@ public:
 	{
 		return mText;
 	}
+
+	QString getLastValidText() { return mLastValidText; } const
 
 	/**
 	 * always returns the local text, don't try to fetch it.
@@ -296,10 +304,12 @@ protected:
 	QString mId;
 	Children mChilds;
 	QVariant mValue;
+	QVariant mLastValidValue;
 	QVariant mValueWhilePreviewing;
 	State mState;
 	State mStateWhilePreviewing;
 	QString mText;
+	QString mLastValidText;
 	QString mTextWhilePreviewing;
 	State mTextState;
 	State mTextStateWhilePreviewing;

@@ -93,9 +93,6 @@ public:
 	bool getAutoCreateItems() const { return mAutoCreateItems; }
 	void setAutoCreateItems(bool v);
 
-	bool getInvalidateOffline() { return mInvalidateOffline; }
-	void setInvalidateOffline(bool value) { mInvalidateOffline = value; }
-
 	bool getFindVictronServices() { return mFindVictronServices; }
 
 private slots:
@@ -112,7 +109,6 @@ private:
 	bool mFindVictronServices;
 	bool mBulkInitOfNewService;
 	bool mAutoCreateItems;
-	bool mInvalidateOffline;
 };
 
 

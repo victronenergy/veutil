@@ -180,18 +180,8 @@ void VeQItemDbus::serviceRegistrationChanged(bool registered)
 		}
 
 	} else {
-		if (producer()->getInvalidateOffline()) {
-			/*
-			 * Ideally the values are kept but only the state is changed, so the user interface
-			 * has a choice how to cope with it. Since the ccgx gui doesn't do that at the moment,
-			 * invalidate it so the display gets updated accordingly.
-			 */
-			produceValue(QVariant(), Offline);
-			produceText("", Offline);
-		} else {
-			setState(Offline);
-			setTextState(Offline);
-		}
+		produceValue(QVariant(), Offline);
+		produceText(QString(), Offline);
 	}
 }
 
@@ -704,8 +694,7 @@ VeQItemDbusProducer::VeQItemDbusProducer(VeQItem *root, QString id,
 	  mDbus(QDBusConnection("")),
 	  mFindVictronServices(findVictronServices),
 	  mBulkInitOfNewService(bulkInitOfNewService),
-	  mAutoCreateItems(true),
-	  mInvalidateOffline(false)
+	  mAutoCreateItems(true)
 {
 	qDBusRegisterMetaType<StringMap>();
 	qDBusRegisterMetaType<ItemMap>();

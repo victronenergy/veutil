@@ -64,7 +64,7 @@ class VE_QITEM_EXPORT VeQItem : public QObject
 	Q_OBJECT
 	Q_ENUMS(State)
 	Q_PROPERTY(QVariant value READ getValue NOTIFY valueChanged WRITE setValue)
-	Q_PROPERTY(QVariant text READ getText NOTIFY valueChanged)
+	Q_PROPERTY(QString text READ getText NOTIFY textChanged)
 	Q_PROPERTY(bool seen READ getSeen NOTIFY seenChanged)
 	Q_PROPERTY(QString uid READ uniqueId CONSTANT)
 	Q_PROPERTY(QString id READ id CONSTANT)

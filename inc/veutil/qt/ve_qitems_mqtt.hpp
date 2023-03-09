@@ -10,9 +10,9 @@
 #include <QQueue>
 #include <QString>
 #include <QByteArray>
+#include <QUrl>
 
 #ifdef MQTT_WEBSOCKETS_ENABLED
-#include <QUrl>
 #include <QWebSocket>
 #include <QWebSocketProtocol>
 #include <QIODevice>
@@ -62,10 +62,10 @@ public:
 
 	VeQItem *createItem() override;
 
-	virtual bool open(const QHostAddress &host, int port);
+	void open(const QHostAddress &host, int port);
 
 #ifdef MQTT_WEBSOCKETS_ENABLED
-	virtual bool open(
+	void open(
 		const QUrl &url,
 		QMqttClient::ProtocolVersion protocolVersion);
 #endif // MQTT_WEBSOCKETS_ENABLED
@@ -110,12 +110,16 @@ private:
 #endif // MQTT_WEBSOCKETS_ENABLED
 	QString mClientId;
 	QString mPortalId;
+	QUrl mUrl;
+	QString mHostName;
+	int mPort;
 	QQueue<QPair<QString, QByteArray> > mMessageQueue;
 	ConnectionState mConnectionState;
 	const int mReconnectAttemptIntervals[6] = { 250, 1000, 2000, 5000, 10000, 30000 };
 	quint16 mAutoReconnectAttemptCounter;
 	const quint16 mAutoReconnectMaxAttempts;
 	QMqttClient::ClientError mError;
+	QMqttClient::ProtocolVersion mProtocolVersion;
 	bool mReceivedMessage;
 };
 
@@ -135,6 +139,7 @@ public:
 	void setProtocol(const QByteArray &protocol);
 	QByteArray protocol() const;
 
+	bool isValid() const;
 	bool open(QIODeviceBase::OpenMode mode) override;
 	void close() override;
 	qint64 readData(char *data, qint64 maxSize) override;

@@ -37,10 +37,12 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 		VeQItem *root, const QString &id, const QString &clientIdPrefix, QObject *parent)
 	: VeQItemProducer(root, id, parent),
 	  mMqttConnection(nullptr),
+	  mPort(0),
 	  mConnectionState(Idle),
 	  mAutoReconnectAttemptCounter(0),
 	  mAutoReconnectMaxAttempts(sizeof(mReconnectAttemptIntervals)/sizeof(mReconnectAttemptIntervals[0])),
 	  mError(QMqttClient::NoError),
+	  mProtocolVersion(QMqttClient::MQTT_3_1_1),
 	  mReceivedMessage(false)
 {
 	// Create a sanitized clientId.  MQTT v3.1 spec states that the clientId must be
@@ -68,76 +70,96 @@ VeQItem *VeQItemMqttProducer::createItem()
 }
 
 #ifdef MQTT_WEBSOCKETS_ENABLED
-bool VeQItemMqttProducer::open(
+void VeQItemMqttProducer::open(
 		const QUrl &url,
 		QMqttClient::ProtocolVersion protocolVersion)
 {
-	if (mMqttConnection) {
-		mMqttConnection->deleteLater();
-	}
+	// Invoke via queued connection to ensure that the children
+	// are created in the appropriate thread.
+	QMetaObject::invokeMethod(this, [this, url, protocolVersion] {
+		mUrl = url;
+		mProtocolVersion = protocolVersion;
+		mHostName = QString();
+		mPort = 0;
 
-	mMqttConnection = new QMqttClient(this);
-	mMqttConnection->setClientId(mClientId);
-	mAutoReconnectAttemptCounter = 0;
+		if (mMqttConnection) {
+			mMqttConnection->deleteLater();
+		}
 
-	connect(mMqttConnection, &QMqttClient::connected,
-		this, &VeQItemMqttProducer::onConnected);
-	connect(mMqttConnection, &QMqttClient::disconnected,
-		this, &VeQItemMqttProducer::onDisconnected);
-	connect(mMqttConnection, &QMqttClient::errorChanged,
-		this, &VeQItemMqttProducer::onErrorChanged);
-	connect(mMqttConnection, &QMqttClient::messageReceived,
-		this, &VeQItemMqttProducer::onMessageReceived);
+		mMqttConnection = new QMqttClient(this);
+		mMqttConnection->setClientId(mClientId);
+		mAutoReconnectAttemptCounter = 0;
 
-	mWebSocket = new WebSocketDevice(mMqttConnection);
-	mWebSocket->setUrl(url);
-	mWebSocket->setProtocol(
-		  protocolVersion == QMqttClient::MQTT_3_1 ? "mqttv3.1" : "mqtt");
+		connect(mMqttConnection, &QMqttClient::connected,
+			this, &VeQItemMqttProducer::onConnected);
+		connect(mMqttConnection, &QMqttClient::disconnected,
+			this, &VeQItemMqttProducer::onDisconnected);
+		connect(mMqttConnection, &QMqttClient::errorChanged,
+			this, &VeQItemMqttProducer::onErrorChanged);
+		connect(mMqttConnection, &QMqttClient::messageReceived,
+			this, &VeQItemMqttProducer::onMessageReceived);
 
-	connect(mWebSocket, &WebSocketDevice::connected,
-		this, [this, protocolVersion] {
-			mMqttConnection->setProtocolVersion(protocolVersion);
-			mMqttConnection->setTransport(mWebSocket, QMqttClient::IODevice);
-			QMetaObject::invokeMethod(this, [this] { aboutToConnect(); }, Qt::QueuedConnection);
-		});
-	connect(mWebSocket, &WebSocketDevice::disconnected,
-		this, [this] {
-			// TODO: does QMqttClient handle this already?
-			// Or do I need to manually close()?
-			qWarning() << "WebSocket disconnected!";
-			mWebSocket->close();
-			mMqttConnection->disconnected();
-		});
+		if (mWebSocket) {
+			mWebSocket->deleteLater();
+		}
 
-	setConnectionState(Connecting);
-	return mWebSocket->open(QIODeviceBase::ReadWrite);
+		mWebSocket = new WebSocketDevice(mMqttConnection);
+		mWebSocket->setUrl(url);
+		mWebSocket->setProtocol(
+			  protocolVersion == QMqttClient::MQTT_3_1 ? "mqttv3.1" : "mqtt");
+
+		connect(mWebSocket, &WebSocketDevice::connected,
+			this, [this, protocolVersion] {
+				mMqttConnection->setProtocolVersion(protocolVersion);
+				mMqttConnection->setTransport(mWebSocket, QMqttClient::IODevice);
+				QMetaObject::invokeMethod(this, [this] { aboutToConnect(); }, Qt::QueuedConnection);
+			});
+		connect(mWebSocket, &WebSocketDevice::disconnected,
+			this, [this] {
+				// TODO: does QMqttClient handle this already?
+				// Or do I need to manually close()?
+				qWarning() << "WebSocket disconnected!";
+				mWebSocket->close();
+				mMqttConnection->disconnected();
+			});
+
+		setConnectionState(Connecting);
+		mWebSocket->open(QIODeviceBase::ReadWrite);
+	}, Qt::QueuedConnection);
 }
 #endif // MQTT_WEBSOCKETS_ENABLED
 
-bool VeQItemMqttProducer::open(const QHostAddress &host, int port)
+void VeQItemMqttProducer::open(const QHostAddress &host, int port)
 {
-	if (mMqttConnection) {
-		mMqttConnection->deleteLater();
-	}
+	// Invoke via queued connection to ensure that the children
+	// are created in the appropriate thread.
+	QMetaObject::invokeMethod(this, [this, host, port] {
+		mHostName = host.toString();
+		mPort = port;
+		mUrl = QUrl();
 
-	mMqttConnection = new QMqttClient(this);
-	mMqttConnection->setClientId(mClientId);
-	mMqttConnection->setHostname(host.toString());
-	mMqttConnection->setPort(port);
+		if (mMqttConnection) {
+			mMqttConnection->deleteLater();
+		}
 
-	connect(mMqttConnection, &QMqttClient::connected,
-		this, &VeQItemMqttProducer::onConnected);
-	connect(mMqttConnection, &QMqttClient::disconnected,
-		this, &VeQItemMqttProducer::onDisconnected);
-	connect(mMqttConnection, &QMqttClient::errorChanged,
-		this, &VeQItemMqttProducer::onErrorChanged);
-	connect(mMqttConnection, &QMqttClient::messageReceived,
-		this, &VeQItemMqttProducer::onMessageReceived);
+		mMqttConnection = new QMqttClient(this);
+		mMqttConnection->setClientId(mClientId);
+		mMqttConnection->setHostname(mHostName);
+		mMqttConnection->setPort(mPort);
 
-	mAutoReconnectAttemptCounter = 0;
-	QMetaObject::invokeMethod(this, [this] { aboutToConnect(); }, Qt::QueuedConnection);
-	setConnectionState(Connecting);
-	return true;
+		connect(mMqttConnection, &QMqttClient::connected,
+			this, &VeQItemMqttProducer::onConnected);
+		connect(mMqttConnection, &QMqttClient::disconnected,
+			this, &VeQItemMqttProducer::onDisconnected);
+		connect(mMqttConnection, &QMqttClient::errorChanged,
+			this, &VeQItemMqttProducer::onErrorChanged);
+		connect(mMqttConnection, &QMqttClient::messageReceived,
+			this, &VeQItemMqttProducer::onMessageReceived);
+
+		mAutoReconnectAttemptCounter = 0;
+		QMetaObject::invokeMethod(this, [this] { aboutToConnect(); }, Qt::QueuedConnection);
+		setConnectionState(Connecting);
+	}, Qt::QueuedConnection);
 }
 
 // Clients should call this method in their aboutToConnect() handler,
@@ -189,8 +211,26 @@ void VeQItemMqttProducer::onDisconnected()
 		// Attempt to reconnect.  We use a staggered exponential backoff interval.
 		setConnectionState(Reconnecting);
 		const int interval = mReconnectAttemptIntervals[mAutoReconnectAttemptCounter++];
+#ifdef MQTT_WEBSOCKETS_ENABLED
+		if (!mWebSocket || !mWebSocket->isValid()) {
+			QTimer::singleShot(interval + QRandomGenerator::global()->bounded(interval/2),
+					this, [this] {
+						quint16 count = mAutoReconnectAttemptCounter;
+						if (mHostName.isEmpty()) {
+							open(mUrl, mProtocolVersion);
+						} else {
+							open(QHostAddress(mHostName), mPort);
+						}
+						mAutoReconnectAttemptCounter= count;
+					});
+		} else {
+			QTimer::singleShot(interval + QRandomGenerator::global()->bounded(interval/2),
+					this, &VeQItemMqttProducer::aboutToConnect);
+		}
+#else
 		QTimer::singleShot(interval + QRandomGenerator::global()->bounded(interval/2),
 				this, &VeQItemMqttProducer::aboutToConnect);
+#endif
 	} else {
 		setConnectionState(Failed);
 	}
@@ -351,56 +391,61 @@ bool VeQItemMqttProducer::publishValue(const QString &uid, const QVariant &value
 
 #ifdef MQTT_WEBSOCKETS_ENABLED
 WebSocketDevice::WebSocketDevice(QObject *parent)
-    : QIODevice(parent)
+	: QIODevice(parent)
 {
-    connect(&mWebSocket, &QWebSocket::connected,
-            this, &WebSocketDevice::connected);
-    connect(&mWebSocket, &QWebSocket::disconnected,
-            this, &WebSocketDevice::disconnected);
-    connect(&mWebSocket, &QWebSocket::binaryMessageReceived,
-            this, &WebSocketDevice::onBinaryMessageReceived);
+	connect(&mWebSocket, &QWebSocket::connected,
+		this, &WebSocketDevice::connected);
+	connect(&mWebSocket, &QWebSocket::disconnected,
+		this, &WebSocketDevice::disconnected);
+	connect(&mWebSocket, &QWebSocket::binaryMessageReceived,
+		this, &WebSocketDevice::onBinaryMessageReceived);
 }
 
 void WebSocketDevice::setUrl(const QUrl &url)
 {
-    if (mUrl != url) {
-        mUrl = url;
-        emit urlChanged();
-    }
+	if (mUrl != url) {
+		mUrl = url;
+		emit urlChanged();
+	}
 }
 
 QUrl WebSocketDevice::url() const
 {
-    return mUrl;
+	return mUrl;
 }
 
 void WebSocketDevice::setProtocol(const QByteArray &protocol)
 {
-    if (mProtocol != protocol) {
-        mProtocol = protocol;
-        emit protocolChanged();
-    }
+	if (mProtocol != protocol) {
+		mProtocol = protocol;
+		emit protocolChanged();
+	}
 }
 
 QByteArray WebSocketDevice::protocol() const
 {
-    return mProtocol;
+	return mProtocol;
+}
+
+bool WebSocketDevice::isValid() const
+{
+	return mWebSocket.isValid();
 }
 
 bool WebSocketDevice::open(QIODeviceBase::OpenMode mode)
 {
-    // FIXME: Qt 6.4 supports websocket subprotocols, but until then...
-    QNetworkRequest r;
-    r.setUrl(mUrl);
-    r.setRawHeader("Sec-WebSocket-Protocol", mProtocol.constData());
-    mWebSocket.open(r);
-    return QIODevice::open(mode);
+	// FIXME: Qt 6.4 supports websocket subprotocols, but until then...
+	QNetworkRequest r;
+	r.setUrl(mUrl);
+	r.setRawHeader("Sec-WebSocket-Protocol", mProtocol.constData());
+	mWebSocket.open(r);
+	return QIODevice::open(mode);
 }
 
 void WebSocketDevice::close()
 {
-    mWebSocket.close();
-    QIODevice::close();
+	mWebSocket.close();
+	QIODevice::close();
 }
 
 qint64 WebSocketDevice::readData(char *data, qint64 maxSize)

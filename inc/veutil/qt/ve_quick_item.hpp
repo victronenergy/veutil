@@ -36,6 +36,7 @@ class VE_QITEM_EXPORT VeQuickItem : public QObject {
 	Q_PROPERTY(double defaultSourceMin READ getDefaultSourceMin NOTIFY defaultMinChanged)
 	Q_PROPERTY(double defaultSourceMax READ getDefaultSourceMax NOTIFY defaultMaxChanged)
 	Q_PROPERTY(bool isSetting READ getIsSetting NOTIFY isSettingChanged WRITE setIsSetting)
+	Q_PROPERTY(bool invalidate READ getInvalidate NOTIFY invalidateChanged WRITE setInvalidate)
 
 public:
 	VeQuickItem(bool isSetting = true) : QObject(),
@@ -43,7 +44,8 @@ public:
 		mValueInDisplayUnits(0),
 		mMaxInDisplayUnits(0),
 		mMinInDisplayUnits(0),
-		mIsSetting(isSetting)
+		mIsSetting(isSetting),
+		mInvalidate(1)
 	{
 		setUid("");
 	}
@@ -117,7 +119,7 @@ public:
 	void setText(const QString &text);
 	QString getUid() { return mItem->uniqueId(); }
 	void setUid(QString uid);
-	QVariant getValue() { return convertToDisplay(mItem->getValue()); }
+	QVariant getValue();
 	QVariant getSourceValue() { return mItem->getValue(); }
 	VeQItem::State getState() { return mItem->getState(); }
 	bool getSeen() { return mItem->getSeen(); }
@@ -128,6 +130,10 @@ public:
 	void setUnit(QString const &unit);
 	int getDecimals() { return mDecimals; }
 	void setDecimals(int decimals);
+
+	bool getInvalidate() { return mInvalidate; }
+	void setInvalidate(bool value);
+
 	QString getInvalidText() { return mInvalidText; }
 	void setInvalidText(QString const &str);
 
@@ -155,6 +161,7 @@ signals:
 	void unitChanged();
 	void decimalsChanged();
 	void invalidTextChanged();
+	void invalidateChanged();
 
 	void sourceUnitChanged();
 	void displayUnitChanged();
@@ -198,6 +205,7 @@ protected:
 	uint32_t mMinInDisplayUnits:1;
 	uint32_t mIsSetting:1;
 	uint32_t mIsAllocated:1;
+	uint32_t mInvalidate:1;
 
 private:
 	void setup()

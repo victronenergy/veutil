@@ -204,7 +204,6 @@ void VeQItemMqttProducer::onDisconnected()
 {
 	setConnectionState(Disconnected);
 	mKeepAliveTimer.stop();
-	mMessageQueue.clear();
 	mReceivedMessage = false;
 
 	if (mAutoReconnectAttemptCounter < mAutoReconnectMaxAttempts) {
@@ -268,15 +267,8 @@ void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMq
 				// ignore keepalive topic.
 			} else {
 				// we have a topic message which we need to expose via VeQItem.
-				// service the queue via a QueuedConnection to ensure
-				// that we don't block the UI.
 				const QString path = topicName.mid(notificationPrefix.size() + 1);
-				mMessageQueue.enqueue(QPair<QString, QByteArray>(path, message));
-				if (mMessageQueue.size() == 1) {
-					QMetaObject::invokeMethod(this, [this] {
-						serviceQueue();
-					}, Qt::QueuedConnection);
-				}
+				parseMessage(path, message);
 			}
 		}
 
@@ -285,17 +277,6 @@ void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMq
 			mReceivedMessage = true;
 			doKeepAlive();
 		}
-	}
-}
-
-void VeQItemMqttProducer::serviceQueue()
-{
-	if (mMessageQueue.size()) {
-		const QPair<QString, QByteArray> message = mMessageQueue.dequeue();
-		parseMessage(message.first, message.second);
-		QMetaObject::invokeMethod(this, [this] {
-			serviceQueue();
-		}, Qt::QueuedConnection);
 	}
 }
 

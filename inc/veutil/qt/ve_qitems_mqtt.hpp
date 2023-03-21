@@ -7,7 +7,6 @@
 #include <QHostAddress>
 #include <QTimer>
 #include <QSet>
-#include <QQueue>
 #include <QString>
 #include <QByteArray>
 #include <QUrl>
@@ -101,7 +100,6 @@ private:
 	void setConnectionState(ConnectionState connectionState);
 	void setError(QMqttClient::ClientError error);
 	void parseMessage(const QString &path, const QByteArray &message);
-	void serviceQueue();
 
 	QTimer mKeepAliveTimer;
 	QMqttClient *mMqttConnection;
@@ -113,7 +111,6 @@ private:
 	QUrl mUrl;
 	QString mHostName;
 	int mPort;
-	QQueue<QPair<QString, QByteArray> > mMessageQueue;
 	ConnectionState mConnectionState;
 	const int mReconnectAttemptIntervals[6] = { 250, 1000, 2000, 5000, 10000, 30000 };
 	quint16 mAutoReconnectAttemptCounter;

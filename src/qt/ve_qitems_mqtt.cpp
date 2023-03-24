@@ -9,6 +9,21 @@
 VeQItemMqtt::VeQItemMqtt(VeQItemMqttProducer *producer)
 	: VeQItem(producer, nullptr)
 {
+	connect(producer, &VeQItemMqttProducer::connectionStateChanged,
+		this, [this] {
+			const VeQItemMqttProducer::ConnectionState state = mqttProducer()->connectionState();
+			switch (state) {
+			case VeQItemMqttProducer::Ready:
+				// TODO: may not be required, since we subscribe to everything
+				//       and send keepalive to read all values when Ready.
+				mqttProducer()->requestValue(uniqueId());
+				break;
+			case VeQItemMqttProducer::Disconnected:
+				produceValue(QVariant(), VeQItem::Offline);
+				break;
+			default: break;
+			}
+		});
 }
 
 int VeQItemMqtt::setValue(QVariant const &value)
@@ -285,10 +300,10 @@ void VeQItemMqttProducer::parseMessage(const QString &path, const QByteArray &me
 	VeQItemMqtt *item = qobject_cast<VeQItemMqtt*>(mProducerRoot->itemGetOrCreate(path, true, true));
 
 	// if the payload is null/empty, then the device has been removed from the system.
-	// for now, simply ignore the message.  In future, we might (after some timeout)
-	// do item->itemDelete() or similar.
+	// invalidate the value, setting the item's state to Offline.
 	if (message.size() == 0) {
 		Q_EMIT nullMessageReceived(path);
+		item->produceValue(QVariant(), VeQItem::Offline);
 	} else {
 		// otherwise, update the value in the item.
 		// TODO: text / min / max / default ??
@@ -365,6 +380,17 @@ bool VeQItemMqttProducer::publishValue(const QString &uid, const QVariant &value
 	const QJsonObject obj { { QStringLiteral("value"), QJsonValue::fromVariant(value) } };
 	const QJsonDocument doc(obj);
 	mMqttConnection->publish(topic, doc.toJson(QJsonDocument::Compact));
+	return true;
+}
+
+bool VeQItemMqttProducer::requestValue(const QString &uid)
+{
+	if (!mMqttConnection) {
+		return false;
+	}
+
+	const QString topic = QStringLiteral("R/%1/%2").arg(mPortalId, uid.mid(5));
+	mMqttConnection->publish(topic, QByteArray());
 	return true;
 }
 

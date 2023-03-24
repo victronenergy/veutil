@@ -72,6 +72,7 @@ public:
 	QMqttClient *mqttConnection() const;
 	void setCredentials(const QString &username, const QString &password);
 	bool publishValue(const QString &uid, const QVariant &value);
+	bool requestValue(const QString &uid);
 	ConnectionState connectionState() const;
 	QMqttClient::ClientError error() const;
 

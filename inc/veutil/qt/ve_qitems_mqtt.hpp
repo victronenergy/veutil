@@ -94,6 +94,7 @@ private Q_SLOTS:
 	void onConnected();
 	void onDisconnected();
 	void onErrorChanged(QMqttClient::ClientError error);
+	void onStateChanged(QMqttClient::ClientState state);
 	void onMessageReceived(const QByteArray &message, const QMqttTopicName &topic);
 	void doKeepAlive();
 

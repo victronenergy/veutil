@@ -89,6 +89,9 @@ void VeQItemMqttProducer::open(
 		const QUrl &url,
 		QMqttClient::ProtocolVersion protocolVersion)
 {
+	mAutoReconnectAttemptCounter = 0;
+	setError(QMqttClient::NoError);
+
 	// Invoke via queued connection to ensure that the children
 	// are created in the appropriate thread.
 	QMetaObject::invokeMethod(this, [this, url, protocolVersion] {
@@ -103,7 +106,6 @@ void VeQItemMqttProducer::open(
 
 		mMqttConnection = new QMqttClient(this);
 		mMqttConnection->setClientId(mClientId);
-		mAutoReconnectAttemptCounter = 0;
 
 		connect(mMqttConnection, &QMqttClient::connected,
 			this, &VeQItemMqttProducer::onConnected);
@@ -111,6 +113,9 @@ void VeQItemMqttProducer::open(
 			this, &VeQItemMqttProducer::onDisconnected);
 		connect(mMqttConnection, &QMqttClient::errorChanged,
 			this, &VeQItemMqttProducer::onErrorChanged);
+		connect(mMqttConnection, &QMqttClient::stateChanged,
+			this, &VeQItemMqttProducer::onStateChanged,
+			Qt::QueuedConnection); // Queued to avoid double onDisconnected().
 		connect(mMqttConnection, &QMqttClient::messageReceived,
 			this, &VeQItemMqttProducer::onMessageReceived);
 
@@ -129,14 +134,6 @@ void VeQItemMqttProducer::open(
 				mMqttConnection->setTransport(mWebSocket, QMqttClient::IODevice);
 				QMetaObject::invokeMethod(this, [this] { aboutToConnect(); }, Qt::QueuedConnection);
 			});
-		connect(mWebSocket, &WebSocketDevice::disconnected,
-			this, [this] {
-				// TODO: does QMqttClient handle this already?
-				// Or do I need to manually close()?
-				qWarning() << "WebSocket disconnected!";
-				mWebSocket->close();
-				mMqttConnection->disconnected();
-			});
 
 		setConnectionState(Connecting);
 		mWebSocket->open(QIODeviceBase::ReadWrite);
@@ -146,6 +143,9 @@ void VeQItemMqttProducer::open(
 
 void VeQItemMqttProducer::open(const QHostAddress &host, int port)
 {
+	mAutoReconnectAttemptCounter = 0;
+	setError(QMqttClient::NoError);
+
 	// Invoke via queued connection to ensure that the children
 	// are created in the appropriate thread.
 	QMetaObject::invokeMethod(this, [this, host, port] {
@@ -168,10 +168,12 @@ void VeQItemMqttProducer::open(const QHostAddress &host, int port)
 			this, &VeQItemMqttProducer::onDisconnected);
 		connect(mMqttConnection, &QMqttClient::errorChanged,
 			this, &VeQItemMqttProducer::onErrorChanged);
+		connect(mMqttConnection, &QMqttClient::stateChanged,
+			this, &VeQItemMqttProducer::onStateChanged,
+			Qt::QueuedConnection); // Queued to avoid double onDisconnected().
 		connect(mMqttConnection, &QMqttClient::messageReceived,
 			this, &VeQItemMqttProducer::onMessageReceived);
 
-		mAutoReconnectAttemptCounter = 0;
 		QMetaObject::invokeMethod(this, [this] { aboutToConnect(); }, Qt::QueuedConnection);
 		setConnectionState(Connecting);
 	}, Qt::QueuedConnection);
@@ -218,41 +220,78 @@ void VeQItemMqttProducer::onConnected()
 void VeQItemMqttProducer::onDisconnected()
 {
 	setConnectionState(Disconnected);
+	if (error() == QMqttClient::NoError
+			&& mMqttConnection
+			&& mMqttConnection->error() != QMqttClient::NoError) {
+		setError(mMqttConnection->error());
+	}
 	mKeepAliveTimer.stop();
 	mReceivedMessage = false;
 
 	if (mAutoReconnectAttemptCounter < mAutoReconnectMaxAttempts) {
 		// Attempt to reconnect.  We use a staggered exponential backoff interval.
-		setConnectionState(Reconnecting);
 		const int interval = mReconnectAttemptIntervals[mAutoReconnectAttemptCounter++];
 #ifdef MQTT_WEBSOCKETS_ENABLED
 		if (!mWebSocket || !mWebSocket->isValid()) {
 			QTimer::singleShot(interval + QRandomGenerator::global()->bounded(interval/2),
 					this, [this] {
+						setConnectionState(Reconnecting);
 						quint16 count = mAutoReconnectAttemptCounter;
 						if (mHostName.isEmpty()) {
 							open(mUrl, mProtocolVersion);
 						} else {
 							open(QHostAddress(mHostName), mPort);
 						}
-						mAutoReconnectAttemptCounter= count;
+						mAutoReconnectAttemptCounter = count;
 					});
 		} else {
 			QTimer::singleShot(interval + QRandomGenerator::global()->bounded(interval/2),
-					this, &VeQItemMqttProducer::aboutToConnect);
+					this, [this] {
+						setConnectionState(Reconnecting);
+						emit aboutToConnect();
+					});
 		}
 #else
 		QTimer::singleShot(interval + QRandomGenerator::global()->bounded(interval/2),
-				this, &VeQItemMqttProducer::aboutToConnect);
+				this, [this] {
+					setConnectionState(Reconnecting);
+					emit aboutToConnect();
+				});
 #endif
 	} else {
+		// Failed to connect.  Wait one minute and then start the connection process again.
 		setConnectionState(Failed);
+		mAutoReconnectAttemptCounter = 0;
+		QTimer::singleShot(60000, this, &VeQItemMqttProducer::onDisconnected);
 	}
 }
 
 void VeQItemMqttProducer::onErrorChanged(QMqttClient::ClientError error)
 {
 	setError(error);
+
+	if (mMqttConnection && mMqttConnection->state() == QMqttClient::Disconnected
+			&& (mConnectionState == VeQItemMqttProducer::Connecting
+				|| mConnectionState == VeQItemMqttProducer::Reconnecting)) {
+		// If the initial connection failed, QMqttClient might fail
+		// to emit the state change correctly.  Force it,
+		// but use a queued connection to avoid the possibility
+		// that the state change signal gets emitted after the
+		// error change signal.
+		QMetaObject::invokeMethod(this, [this] {
+			onStateChanged(QMqttClient::Disconnected);
+		}, Qt::QueuedConnection);
+	}
+}
+
+void VeQItemMqttProducer::onStateChanged(QMqttClient::ClientState state)
+{
+	if (mMqttConnection && mMqttConnection->state() == QMqttClient::Disconnected
+			&& (mConnectionState == VeQItemMqttProducer::Connecting
+				|| mConnectionState == VeQItemMqttProducer::Reconnecting)) {
+		// if the connection attempt failed, trigger our normal onDisconnected handler.
+		onDisconnected();
+	}
 }
 
 void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMqttTopicName &topic)

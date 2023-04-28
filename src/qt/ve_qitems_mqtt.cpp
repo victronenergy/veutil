@@ -13,7 +13,7 @@ VeQItemMqtt::VeQItemMqtt(VeQItemMqttProducer *producer)
 		this, [this] {
 			const VeQItemMqttProducer::ConnectionState state = mqttProducer()->connectionState();
 			switch (state) {
-			case VeQItemMqttProducer::Ready:
+			case VeQItemMqttProducer::Initializing:
 				// No need to requestValue(), since we subscribe to everything
 				// and send keepalive to read all values when Ready.
 				// One possible issue: the VRM broker will provide retained
@@ -54,6 +54,9 @@ VeQItemMqttProducer *VeQItemMqtt::mqttProducer() const
 VeQItemMqttProducer::VeQItemMqttProducer(
 		VeQItem *root, const QString &id, const QString &clientIdPrefix, QObject *parent)
 	: VeQItemProducer(root, id, parent),
+	  mKeepAliveTimer(new QTimer(this)),
+	  mReadyStateTimer(new QTimer(this)),
+	  mReadyStateFallbackTimer(new QTimer(this)),
 	  mMqttConnection(nullptr),
 	  mPort(0),
 	  mConnectionState(Idle),
@@ -76,10 +79,30 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 	const quint64 uniqueId = QRandomGenerator::global()->generate64();
 	mClientId.append(QStringLiteral("%1").arg(uniqueId, 16, 16, QLatin1Char('0')));
 
-	mKeepAliveTimer.setInterval(1000 * 30);
-	connect(&mKeepAliveTimer, &QTimer::timeout,
+	mKeepAliveTimer->setInterval(1000 * 30);
+	connect(mKeepAliveTimer, &QTimer::timeout,
 		this, &VeQItemMqttProducer::doKeepAlive);
-	mKeepAliveTimer.start();
+	mKeepAliveTimer->start();
+
+	mReadyStateTimer->setSingleShot(true);
+	mReadyStateTimer->setInterval(500);
+	connect(mReadyStateTimer, &QTimer::timeout,
+		this, [this] {
+			mReadyStateTimer->stop();
+			if (connectionState() == Initializing) {
+				setConnectionState(Ready);
+			}
+		});
+
+	mReadyStateFallbackTimer->setSingleShot(true);
+	mReadyStateFallbackTimer->setInterval(5000);
+	connect(mReadyStateFallbackTimer, &QTimer::timeout,
+		this, [this] {
+			mReadyStateTimer->stop();
+			if (connectionState() == Initializing) {
+				setConnectionState(Ready);
+			}
+		});
 }
 
 VeQItem *VeQItemMqttProducer::createItem()
@@ -217,7 +240,7 @@ void VeQItemMqttProducer::onConnected()
 		doKeepAlive();
 	}
 
-	mKeepAliveTimer.start();
+	mKeepAliveTimer->start();
 }
 
 void VeQItemMqttProducer::onDisconnected()
@@ -228,7 +251,8 @@ void VeQItemMqttProducer::onDisconnected()
 			&& mMqttConnection->error() != QMqttClient::NoError) {
 		setError(mMqttConnection->error());
 	}
-	mKeepAliveTimer.stop();
+	mKeepAliveTimer->stop();
+	mReadyStateTimer->stop();
 	mReceivedMessage = false;
 
 	if (mAutoReconnectAttemptCounter < mAutoReconnectMaxAttempts) {
@@ -329,10 +353,19 @@ void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMq
 			}
 		}
 
-		// Once we have received a message, transition to Ready state.
+		// Once we have received a message, perform KeepAlive.
 		if (!mReceivedMessage) {
 			mReceivedMessage = true;
 			doKeepAlive();
+		} else if (connectionState() == VeQItemMqttProducer::Initializing) {
+			// We will receive a flurry of messages upon initial connection.
+			// Once they subside we should transition to Ready state.
+			if (!mReadyStateTimer->isActive()) {
+				// transition to Ready state after 5 seconds
+				// even if we are still receiving initial messages.
+				mReadyStateFallbackTimer->start();
+			}
+			mReadyStateTimer->start(); // restart the timer.
 		}
 	}
 }
@@ -362,7 +395,8 @@ void VeQItemMqttProducer::doKeepAlive()
 			&& mMqttConnection->state() == QMqttClient::Connected
 			&& !mPortalId.isEmpty()) {
 		if (mReceivedMessage) {
-			setConnectionState(Ready);
+			// transition to Initializing state while we wait for the flurry of initial messages to end.
+			setConnectionState(Initializing);
 		}
 		mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)), QByteArray());
 	}

@@ -50,6 +50,7 @@ public:
 		Idle,
 		Connecting,
 		Connected,
+		Initializing,
 		Ready,
 		Disconnected,
 		Reconnecting,
@@ -103,7 +104,9 @@ private:
 	void setError(QMqttClient::ClientError error);
 	void parseMessage(const QString &path, const QByteArray &message);
 
-	QTimer mKeepAliveTimer;
+	QTimer *mKeepAliveTimer;
+	QTimer *mReadyStateTimer;
+	QTimer *mReadyStateFallbackTimer;
 	QMqttClient *mMqttConnection;
 #ifdef MQTT_WEBSOCKETS_ENABLED
 	WebSocketDevice *mWebSocket = nullptr;

@@ -14,9 +14,12 @@ VeQItemMqtt::VeQItemMqtt(VeQItemMqttProducer *producer)
 			const VeQItemMqttProducer::ConnectionState state = mqttProducer()->connectionState();
 			switch (state) {
 			case VeQItemMqttProducer::Ready:
-				// TODO: may not be required, since we subscribe to everything
-				//       and send keepalive to read all values when Ready.
-				mqttProducer()->requestValue(uniqueId());
+				// No need to requestValue(), since we subscribe to everything
+				// and send keepalive to read all values when Ready.
+				// One possible issue: the VRM broker will provide retained
+				// values (which might be stale/invalid for non-Settings paths).
+				// To resolve this: drop any message from VRM broker with retained flag set.
+				// Problem: QMqttClient doesn't expose the retain flag value...
 				break;
 			case VeQItemMqttProducer::Disconnected:
 				produceValue(QVariant(), VeQItem::Offline);

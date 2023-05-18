@@ -394,7 +394,7 @@ void VeQItemMqttProducer::doKeepAlive()
 	if (mMqttConnection
 			&& mMqttConnection->state() == QMqttClient::Connected
 			&& !mPortalId.isEmpty()) {
-		if (mReceivedMessage) {
+		if (mReceivedMessage && mConnectionState == VeQItemMqttProducer::Connected) {
 			// transition to Initializing state while we wait for the flurry of initial messages to end.
 			setConnectionState(Initializing);
 		}

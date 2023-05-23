@@ -533,21 +533,31 @@ void WebSocketDevice::close()
 
 qint64 WebSocketDevice::readData(char *data, qint64 maxSize)
 {
-    const qint64 count = maxSize < mData.size() ? maxSize : mData.size();
-    memcpy(data, mData.constData(), count);
-    mData = mData.right(mData.size() - count);
-    return count;
+	const qint64 count = maxSize < mData.size() ? maxSize : mData.size();
+	memcpy(data, mData.constData(), count);
+	mData = mData.right(mData.size() - count);
+	return count;
 }
 
 qint64 WebSocketDevice::writeData(const char *data, qint64 maxSize)
 {
-    return mWebSocket.sendBinaryMessage(QByteArray(data, maxSize));
+	return mWebSocket.sendBinaryMessage(QByteArray(data, maxSize));
 }
 
 void WebSocketDevice::onBinaryMessageReceived(const QByteArray &message)
 {
-    mData.append(message);
-    emit readyRead();
+	mData.append(message);
+	emit readyRead();
+}
+
+qint64 WebSocketDevice::bytesAvailable() const
+{
+	return mData.size() + QIODevice::bytesAvailable();
+}
+
+bool WebSocketDevice::isSequential() const
+{
+	return true;
 }
 #endif // MQTT_WEBSOCKETS_ENABLED
 

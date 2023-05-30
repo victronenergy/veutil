@@ -3,7 +3,9 @@
 #include <veutil/qt/ve_qitem.hpp>
 
 #include <QMqttClient>
+#include <QMqttSubscription>
 
+#include <QPointer>
 #include <QHostAddress>
 #include <QTimer>
 #include <QSet>
@@ -97,6 +99,7 @@ private Q_SLOTS:
 	void onErrorChanged(QMqttClient::ClientError error);
 	void onStateChanged(QMqttClient::ClientState state);
 	void onMessageReceived(const QByteArray &message, const QMqttTopicName &topic);
+	void onSubscriptionMessageReceived(const QMqttMessage &message);
 	void doKeepAlive();
 
 private:
@@ -108,6 +111,7 @@ private:
 	QTimer *mReadyStateTimer;
 	QTimer *mReadyStateFallbackTimer;
 	QMqttClient *mMqttConnection;
+	QPointer<QMqttSubscription> mMqttSubscription;
 #ifdef MQTT_WEBSOCKETS_ENABLED
 	WebSocketDevice *mWebSocket = nullptr;
 #endif // MQTT_WEBSOCKETS_ENABLED

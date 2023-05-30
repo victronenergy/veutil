@@ -235,7 +235,11 @@ void VeQItemMqttProducer::onConnected()
 	if (mPortalId.isEmpty()) {
 		mMqttConnection->subscribe(QStringLiteral("N/+/system/0/Serial"));
 	} else {
-		mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
+		QObject::disconnect(mMqttConnection, &QMqttClient::messageReceived,
+			this, &VeQItemMqttProducer::onMessageReceived);
+		mMqttSubscription = mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
+		QObject::connect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
+			this, &VeQItemMqttProducer::onSubscriptionMessageReceived, Qt::UniqueConnection);
 		mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/system/0/Serial").arg(mPortalId)), QByteArray());
 		doKeepAlive();
 	}
@@ -254,6 +258,10 @@ void VeQItemMqttProducer::onDisconnected()
 	mKeepAliveTimer->stop();
 	mReadyStateTimer->stop();
 	mReceivedMessage = false;
+	if (mMqttSubscription.data()) {
+		QObject::disconnect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
+			this, &VeQItemMqttProducer::onSubscriptionMessageReceived);
+	}
 
 	if (mAutoReconnectAttemptCounter < mAutoReconnectMaxAttempts) {
 		// Attempt to reconnect.  We use a staggered exponential backoff interval.
@@ -333,40 +341,53 @@ void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMq
 			if (parts.length() == 5 && parts[1] == payload.value(QStringLiteral("value")).toString()) {
 				setPortalId(parts[1]);
 				mMqttConnection->unsubscribe(QStringLiteral("N/+/system/0/Serial"));
-				mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
+				QObject::disconnect(mMqttConnection, &QMqttClient::messageReceived,
+					this, &VeQItemMqttProducer::onMessageReceived);
+				mMqttSubscription = mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
+				QObject::connect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
+					this, &VeQItemMqttProducer::onSubscriptionMessageReceived, Qt::UniqueConnection);
 				doKeepAlive();
 			} else {
 				qWarning() << "VeQItemMqttProducer::onMessageReceived(): portal id mismatch: "
 					<< topicName << " -> " << QString::fromUtf8(message);
 			}
 		}
-	} else {
-		const QString notificationPrefix = QStringLiteral("N/%1").arg(mPortalId);
-		if (topicName.startsWith(notificationPrefix)) {
-			const QString keepaliveTopic = notificationPrefix + QStringLiteral("/keepalive");
-			if (topicName.compare(keepaliveTopic, Qt::CaseInsensitive) == 0) {
-				// ignore keepalive topic.
-			} else {
-				// we have a topic message which we need to expose via VeQItem.
-				const QString path = topicName.mid(notificationPrefix.size() + 1);
-				parseMessage(path, message);
-			}
-		}
+	}
+}
 
-		// Once we have received a message, perform KeepAlive.
-		if (!mReceivedMessage) {
-			mReceivedMessage = true;
-			doKeepAlive();
-		} else if (connectionState() == VeQItemMqttProducer::Initializing) {
-			// We will receive a flurry of messages upon initial connection.
-			// Once they subside we should transition to Ready state.
-			if (!mReadyStateTimer->isActive()) {
-				// transition to Ready state after 5 seconds
-				// even if we are still receiving initial messages.
-				mReadyStateFallbackTimer->start();
-			}
-			mReadyStateTimer->start(); // restart the timer.
+void VeQItemMqttProducer::onSubscriptionMessageReceived(const QMqttMessage &message)
+{
+	const QString topicName(message.topic().name());
+
+	const QString notificationPrefix = QStringLiteral("N/%1").arg(mPortalId);
+	if (topicName.startsWith(notificationPrefix)) {
+		const QString keepaliveTopic = notificationPrefix + QStringLiteral("/keepalive");
+		if (topicName.compare(keepaliveTopic, Qt::CaseInsensitive) == 0) {
+			// ignore keepalive topic.
+		} else if (message.retain()) {
+			// ignore retained messages, as for internet brokers (VRM)
+			// nothing will "unpublish" the topic for a device which goes offline.
+			// see issue #313 in gui-v2.
+		} else {
+			// we have a topic message which we need to expose via VeQItem.
+			const QString path = topicName.mid(notificationPrefix.size() + 1);
+			parseMessage(path, message.payload());
 		}
+	}
+
+	// Once we have received a message, perform KeepAlive.
+	if (!mReceivedMessage) {
+		mReceivedMessage = true;
+		doKeepAlive();
+	} else if (connectionState() == VeQItemMqttProducer::Initializing) {
+		// We will receive a flurry of messages upon initial connection.
+		// Once they subside we should transition to Ready state.
+		if (!mReadyStateTimer->isActive()) {
+			// transition to Ready state after 5 seconds
+			// even if we are still receiving initial messages.
+			mReadyStateFallbackTimer->start();
+		}
+		mReadyStateTimer->start(); // restart the timer.
 	}
 }
 

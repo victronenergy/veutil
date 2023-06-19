@@ -11,7 +11,7 @@ CanBusProfile::CanBusProfile(int bitrate, QObject *parent) :
 
 void CanBusProfile::enableProfile()
 {
-	Q_FOREACH(CanBusService *service, mServices) {
+	for (CanBusService *service: mServices) {
 		service->setProfileEnabled(true);
 		service->checkStart();
 	}
@@ -19,7 +19,7 @@ void CanBusProfile::enableProfile()
 
 void CanBusProfile::disableProfile()
 {
-	Q_FOREACH(CanBusService *service, mServices) {
+	for (CanBusService *service: mServices) {
 		service->setProfileEnabled(false);
 		service->remove();
 	}
@@ -151,4 +151,3 @@ void CanBusService::dbusItemChanged(VeQItem *item, QVariant var)
 
 	checkStart();
 }
-

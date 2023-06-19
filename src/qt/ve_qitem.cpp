@@ -405,7 +405,7 @@ int VeQItem::index()
 
 void VeQItem::foreachChildFirst(VeQItemForeach *each)
 {
-	foreach (VeQItem *child, mChilds)
+	for (VeQItem *child: mChilds)
 		child->foreachChildFirst(each);
 	each->handleItem(this);
 }
@@ -418,7 +418,7 @@ void VeQItem::foreachChildFirst(QObject *obj, const char *member, void *ctx)
 
 void VeQItem::foreachChildFirst(std::function<void(VeQItem *)> const & f)
 {
-	foreach (VeQItem *child, mChilds)
+	for (VeQItem *child: mChilds)
 		child->foreachChildFirst(f);
 	f(this);
 }
@@ -426,7 +426,7 @@ void VeQItem::foreachChildFirst(std::function<void(VeQItem *)> const & f)
 void VeQItem::foreachParentFirst(VeQItemForeach *each)
 {
 	each->handleItem(this);
-	foreach (VeQItem *child, mChilds)
+	for (VeQItem *child: mChilds)
 		child->foreachParentFirst(each);
 }
 

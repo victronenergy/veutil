@@ -10,6 +10,8 @@
 # define VE_QITEM_EXPORT
 #endif
 
+#include <cstdint>
+
 #include <veutil/qt/ve_qitem.hpp>
 #include <veutil/qt/unit_conversion.hpp>
 

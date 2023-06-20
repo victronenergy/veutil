@@ -9,7 +9,7 @@ class VeSortFilterProxyModel : public QSortFilterProxyModel
 	Q_PROPERTY(bool naturalSort READ naturalSort WRITE setNaturalSort NOTIFY naturalSortChanged)
 
 public:
-	Q_INVOKABLE void setSourceModel(QAbstractItemModel *sourceModel) {
+	Q_INVOKABLE void setSourceModel(QAbstractItemModel *sourceModel) override {
 		QSortFilterProxyModel::setSourceModel(sourceModel);
 		emit sourceModelChanged();
 		sort(0);
@@ -30,7 +30,7 @@ signals:
 	void sourceModelChanged();
 
 protected:
-	virtual bool lessThan(const QModelIndex &source_left, const QModelIndex &source_right) const
+	bool lessThan(const QModelIndex &source_left, const QModelIndex &source_right) const override
 	{
 		if (!mNaturalSort)
 			return QSortFilterProxyModel::lessThan(source_left, source_right);

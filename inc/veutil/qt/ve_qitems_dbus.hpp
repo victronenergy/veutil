@@ -22,18 +22,18 @@ class VeQItemDbus : public VeQItem, protected QDBusContext
 public:
 	VeQItemDbus(VeQItemDbusProducer *producer);
 	bool introspect();
-	virtual QVariant getValue() { return getValue(false); }
-	virtual QString getText() { return getText(false); }
-	virtual QVariant itemProperty(const char *name) { return itemProperty(name, false); }
-	virtual int setValue(QVariant const &value);
+	QVariant getValue() override { return getValue(false); }
+	QString getText() override { return getText(false); }
+	QVariant itemProperty(const char *name) override { return itemProperty(name, false); }
+	int setValue(QVariant const &value) override;
 	VeQItemDbusProducer *producer();
 	void serviceRegistrationChanged(bool registered);
 	void getItemsDone();
-	virtual void produceValue(QVariant variant, State state = Synchronized, bool forceChanged = false);
-	virtual void produceText(QString text, State state = Synchronized);
+	void produceValue(QVariant variant, State state = Synchronized, bool forceChanged = false) override;
+	void produceText(QString text, State state = Synchronized) override;
 
 protected:
-	virtual void setParent(QObject *parent);
+	void setParent(QObject *parent) override;
 	QString dbusPath();
 	QString dbusServiceName();
 	bool dbusIsServiceRegistered();
@@ -86,7 +86,7 @@ public:
 	virtual bool open(const QString &address = "session", const QString &qtDbusName = "qtdbus");
 	virtual bool open(const QDBusConnection &dbusConnection);
 
-	virtual VeQItem *createItem();
+	VeQItem *createItem() override;
 	QDBusConnection &dbusConnection() { return mDbus; }
 	VeDbusServicePrivate *dbusServiceGetOrCreate(const QString serviceName, QString owner = QString());
 
@@ -160,7 +160,7 @@ class VeQItemDbusSettings : public VeQItemSettings
 public:
 	VeQItemDbusSettings(VeQItem *parent, QString id);
 
-	virtual bool addSettings(VeQItemSettingsInfo const &info);
+	bool addSettings(VeQItemSettingsInfo const &info) override;
 
 private:
 	QDBusMessage sendAddSettings(VeQItemSettingsInfo const &settingsInfo);

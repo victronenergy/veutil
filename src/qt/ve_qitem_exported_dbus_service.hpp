@@ -21,8 +21,8 @@ public:
 	VeQItem *root();
 	bool registerService();
 	bool unregisterService();
-	virtual QString introspect(const QString &path) const;
-	virtual bool handleMessage(const QDBusMessage &message, const QDBusConnection &connection);
+	QString introspect(const QString &path) const override;
+	bool handleMessage(const QDBusMessage &message, const QDBusConnection &connection) override;
 
 private slots:
 	void onChildAdded();

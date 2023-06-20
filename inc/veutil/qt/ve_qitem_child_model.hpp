@@ -56,8 +56,13 @@ public:
 	QDeclarativeComponent * sortDelegate() const { return mSortDelegate; }
 	void setSortDelegate(QDeclarativeComponent *delegate);
 
+// NOTE: roleNames doesn't exists in qt4 as virtual function
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 	QHash<int, QByteArray> roleNames() const;
-	QVariant data(const QModelIndex &index, int role) const;
+#else
+	QHash<int, QByteArray> roleNames() const override;
+#endif
+	QVariant data(const QModelIndex &index, int role) const override;
 
 	int sortValueColumn() const { return mSortValueColumn; }
 
@@ -80,8 +85,8 @@ protected slots:
 protected:
 	void clear();
 
-	virtual void doInsertItem(VeQItem *item, int row);
-	virtual void doRemove(int n);
+	void doInsertItem(VeQItem *item, int row) override;
+	void doRemove(int n) override;
 
 private:
 	QAbstractItemModel *mTableModel;

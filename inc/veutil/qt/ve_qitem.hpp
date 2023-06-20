@@ -391,7 +391,7 @@ public:
 		VeQItem(producer, parent)
 	{}
 
-	virtual int setValue(QVariant const &value)
+	int setValue(QVariant const &value) override
 	{
 		VeQItem::setValue(value);
 		produceValue(value);

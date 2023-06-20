@@ -53,8 +53,8 @@ public:
 		setSourceModel(mTableModel);
 	}
 
-	void classBegin() {}
-	void componentComplete();
+	void classBegin() override {}
+	void componentComplete() override;
 
 	VeQItemTableModel *model() { return mTableModel;	}
 	void setModel(VeQItemTableModel *model);
@@ -85,12 +85,12 @@ public:
 		sort(column, sortOrder());
 	}
 
-	int rowCount(const QModelIndex &parent = QModelIndex()) const {
+	int rowCount(const QModelIndex &parent = QModelIndex()) const override {
 		return QSortFilterProxyModel::rowCount(parent);
 	}
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-	Q_INVOKABLE void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) {
+	Q_INVOKABLE void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override {
 #else
 	Q_INVOKABLE void sort(int column, int order = Qt::AscendingOrder) {
 #endif
@@ -100,7 +100,7 @@ public:
 			emit sortColumnChanged();
 	}
 
-	virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const;
+	bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
 
 signals:
 	void filterRegExpChanged();

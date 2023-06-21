@@ -127,6 +127,7 @@ private:
 	QMqttClient::ClientError mError;
 	QMqttClient::ProtocolVersion mProtocolVersion;
 	bool mReceivedMessage;
+	bool mIsVrmBroker;
 };
 
 #ifdef MQTT_WEBSOCKETS_ENABLED

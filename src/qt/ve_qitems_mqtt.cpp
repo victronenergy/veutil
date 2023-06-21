@@ -64,7 +64,8 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 	  mAutoReconnectMaxAttempts(sizeof(mReconnectAttemptIntervals)/sizeof(mReconnectAttemptIntervals[0])),
 	  mError(QMqttClient::NoError),
 	  mProtocolVersion(QMqttClient::MQTT_3_1_1),
-	  mReceivedMessage(false)
+	  mReceivedMessage(false),
+	  mIsVrmBroker(false)
 {
 	// Create a sanitized clientId.  MQTT v3.1 spec states that the clientId must be
 	// between 1 and 23 characters, and some brokers support [a-z][A-Z][0-9] only.
@@ -117,6 +118,8 @@ void VeQItemMqttProducer::open(
 		const QUrl &url,
 		QMqttClient::ProtocolVersion protocolVersion)
 {
+	mIsVrmBroker = url.toString().startsWith(QStringLiteral("wss://webmqtt"))
+			&& url.toString().endsWith(QStringLiteral(".victronenergy.com/mqtt"));
 	mAutoReconnectAttemptCounter = 0;
 	setError(QMqttClient::NoError);
 
@@ -363,10 +366,12 @@ void VeQItemMqttProducer::onSubscriptionMessageReceived(const QMqttMessage &mess
 		const QString keepaliveTopic = notificationPrefix + QStringLiteral("/keepalive");
 		if (topicName.compare(keepaliveTopic, Qt::CaseInsensitive) == 0) {
 			// ignore keepalive topic.
-		} else if (message.retain()) {
+		} else if (!mIsVrmBroker && message.retain()) {
 			// ignore retained messages, as for internet brokers (VRM)
 			// nothing will "unpublish" the topic for a device which goes offline.
 			// see issue #313 in gui-v2.
+			// for now, only enable this for non-VRM (i.e. local) brokers,
+			// as VRM is not yet using FlashMQ.
 		} else {
 			// we have a topic message which we need to expose via VeQItem.
 			const QString path = topicName.mid(notificationPrefix.size() + 1);
@@ -420,7 +425,7 @@ void VeQItemMqttProducer::doKeepAlive(bool suppressRepublish)
 	if (mMqttConnection
 			&& mMqttConnection->state() == QMqttClient::Connected
 			&& !mPortalId.isEmpty()) {
-		if (!suppressRepublish) {
+		if (mIsVrmBroker || !suppressRepublish) {
 			mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)),
 					QByteArray());
 			mKeepAliveTimer->start();

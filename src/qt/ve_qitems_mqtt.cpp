@@ -81,11 +81,13 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 
 	mKeepAliveTimer->setInterval(1000 * 30);
 	connect(mKeepAliveTimer, &QTimer::timeout,
-		this, &VeQItemMqttProducer::doKeepAlive);
-	mKeepAliveTimer->start();
+		[this] {
+			doKeepAlive(/* suppressRepublish = */ true);
+		});
+	// start the timer once we have sent the first (empty) keepalive after subscribing.
 
 	mReadyStateTimer->setSingleShot(true);
-	mReadyStateTimer->setInterval(500);
+	mReadyStateTimer->setInterval(1000);
 	connect(mReadyStateTimer, &QTimer::timeout,
 		this, [this] {
 			mReadyStateTimer->stop();
@@ -95,7 +97,7 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 		});
 
 	mReadyStateFallbackTimer->setSingleShot(true);
-	mReadyStateFallbackTimer->setInterval(5000);
+	mReadyStateFallbackTimer->setInterval(10000);
 	connect(mReadyStateFallbackTimer, &QTimer::timeout,
 		this, [this] {
 			mReadyStateTimer->stop();
@@ -240,11 +242,8 @@ void VeQItemMqttProducer::onConnected()
 		mMqttSubscription = mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
 		QObject::connect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
 			this, &VeQItemMqttProducer::onSubscriptionMessageReceived, Qt::UniqueConnection);
-		mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/system/0/Serial").arg(mPortalId)), QByteArray());
 		doKeepAlive();
 	}
-
-	mKeepAliveTimer->start();
 }
 
 void VeQItemMqttProducer::onDisconnected()
@@ -375,15 +374,17 @@ void VeQItemMqttProducer::onSubscriptionMessageReceived(const QMqttMessage &mess
 		}
 	}
 
-	// Once we have received a message, perform KeepAlive.
+	// Once we have received a message, transition to Initializing state.
+	// Remain in this state while we wait for the flurry of initial messages to end.
 	if (!mReceivedMessage) {
 		mReceivedMessage = true;
-		doKeepAlive();
-	} else if (connectionState() == VeQItemMqttProducer::Initializing) {
+		setConnectionState(VeQItemMqttProducer::Initializing);
+	}
+	if (connectionState() == VeQItemMqttProducer::Initializing) {
 		// We will receive a flurry of messages upon initial connection.
 		// Once they subside we should transition to Ready state.
 		if (!mReadyStateTimer->isActive()) {
-			// transition to Ready state after 5 seconds
+			// transition to Ready state after 10 seconds
 			// even if we are still receiving initial messages.
 			mReadyStateFallbackTimer->start();
 		}
@@ -410,16 +411,23 @@ void VeQItemMqttProducer::parseMessage(const QString &path, const QByteArray &me
 	}
 }
 
-void VeQItemMqttProducer::doKeepAlive()
+// The initial keepAlive sent immediately after subscribing to "N/portalId/#"
+// should have an empty message payload.
+// Periodic keepAlive messages sent every 30 seconds thereafter should
+// have the payload: { "keepalive-options" : ["suppress-republish"] }
+void VeQItemMqttProducer::doKeepAlive(bool suppressRepublish)
 {
 	if (mMqttConnection
 			&& mMqttConnection->state() == QMqttClient::Connected
 			&& !mPortalId.isEmpty()) {
-		if (mReceivedMessage && mConnectionState == VeQItemMqttProducer::Connected) {
-			// transition to Initializing state while we wait for the flurry of initial messages to end.
-			setConnectionState(Initializing);
+		if (!suppressRepublish) {
+			mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)),
+					QByteArray());
+			mKeepAliveTimer->start();
+		} else {
+			mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)),
+					QByteArrayLiteral("{ \"keepalive-options\" : [\"suppress-republish\"] }"));
 		}
-		mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)), QByteArray());
 	}
 }
 

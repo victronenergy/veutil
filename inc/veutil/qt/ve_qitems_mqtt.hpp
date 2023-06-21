@@ -100,7 +100,7 @@ private Q_SLOTS:
 	void onStateChanged(QMqttClient::ClientState state);
 	void onMessageReceived(const QByteArray &message, const QMqttTopicName &topic);
 	void onSubscriptionMessageReceived(const QMqttMessage &message);
-	void doKeepAlive();
+	void doKeepAlive(bool suppressRepublish = false);
 
 private:
 	void setConnectionState(ConnectionState connectionState);

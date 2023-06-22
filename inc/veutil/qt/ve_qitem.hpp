@@ -103,9 +103,24 @@ public:
 
 	/**
 	 * @brief request for the item its value.
+	 *
+	 * If the value is known it will be returned immediately, otherwise a default
+	 * constructed QVariant will be returned followed by a valueChanged signal.
 	 */
 	virtual QVariant getValue()
 	{
+		return getValue(false);
+	}
+
+	/**
+	 * @brief request for the item its value.
+	 *
+	 * When force is true, this will always request the value even if a cached value
+	 * is available.
+	 */
+	virtual QVariant getValue(bool force)
+	{
+		Q_UNUSED(force);
 		if (mState == Idle)
 			setState(Requested);
 		return mValue;
@@ -135,6 +150,15 @@ public:
 	 */
 	virtual QString getText()
 	{
+		return getText(false);
+	}
+
+	/**
+	 * Like getValue, but a human representable version.
+	 */
+	virtual QString getText(bool force)
+	{
+		Q_UNUSED(force);
 		return mText;
 	}
 

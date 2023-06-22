@@ -22,8 +22,8 @@ class VeQItemDbus : public VeQItem, protected QDBusContext
 public:
 	VeQItemDbus(VeQItemDbusProducer *producer);
 	bool introspect();
-	QVariant getValue() override { return getValue(false); }
-	QString getText() override { return getText(false); }
+	QVariant getValue(bool force) override;
+	QString getText(bool force) override;
 	QVariant itemProperty(const char *name) override { return itemProperty(name, false); }
 	int setValue(QVariant const &value) override;
 	VeQItemDbusProducer *producer();
@@ -53,8 +53,6 @@ private slots:
 	void defaultObtained(QDBusPendingCallWatcher *call);
 
 private:
-	QVariant getValue(bool force);
-	QString getText(bool force);
 	QVariant itemProperty(const char *name, bool force);
 	QDBusPendingCallWatcher *asyncCall(const QString &method, char const *returnMethod);
 

@@ -34,11 +34,11 @@ void VeQuickItem::setSourceMin(const double &min)
 	emit minChanged();
 }
 
-QString VeQuickItem::getText()
+QString VeQuickItem::getText(bool force)
 {
 	switch (mTextMode) {
 	case TextMode::FromItem: {
-		QString text = mInvalidate ? mItem->getText() : mItem->getLastValidText();
+		QString text = mInvalidate ? mItem->getText(force) : mItem->getLastValidText();
 		if (text.isEmpty())
 			return mInvalidText;
 		return text;
@@ -46,7 +46,7 @@ QString VeQuickItem::getText()
 	case TextMode::Assigned:
 		return mAssignedText;
 	case TextMode::Format:
-		QVariant value = mInvalidate ? getValue() : mItem->getLastValidValue();
+		QVariant value = mInvalidate ? getValue(force) : mItem->getLastValidValue();
 		if (!value.isValid())
 			return mInvalidText;
 		return QString::number(value.toDouble(), 'f', mDecimals) + mUnit;
@@ -90,9 +90,9 @@ void VeQuickItem::setUid(QString uid)
 	emit uidChanged();
 }
 
-QVariant VeQuickItem::getValue()
+QVariant VeQuickItem::getValue(bool force)
 {
-	QVariant value = mInvalidate ? mItem->getValue() : mItem->getLastValidValue();
+	QVariant value = mInvalidate ? mItem->getValue(force) : mItem->getLastValidValue();
 	return convertToDisplay(value);
 }
 

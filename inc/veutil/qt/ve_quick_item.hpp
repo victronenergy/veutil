@@ -117,11 +117,11 @@ public:
 		return max.isValid() ? max.toDouble() : mInvalidMin;
 	}
 
-	QString getText();
+	Q_INVOKABLE QString getText(bool force = false);
 	void setText(const QString &text);
 	QString getUid() { return mItem->uniqueId(); }
 	void setUid(QString uid);
-	QVariant getValue();
+	Q_INVOKABLE QVariant getValue(bool force = false);
 	QVariant getSourceValue() { return mItem->getValue(); }
 	VeQItem::State getState() { return mItem->getState(); }
 	bool getSeen() { return mItem->getSeen(); }

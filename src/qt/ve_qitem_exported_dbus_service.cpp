@@ -216,7 +216,7 @@ bool VeQItemExportedDbusService::handleGetItems(const QDBusMessage &message,
 	mRoot->foreachParentFirst([&items,this](VeQItem *item){
 		if (!item->hasChildren()) {
 			QMap<QString, QVariant> m;
-			m.insert("Value", denormalizeVariant(item->getLocalValue()));
+			m.insert("Value", denormalizeVariant(item->getValue()));
 			m.insert("Text", item->getText());
 
 			QVariant v;

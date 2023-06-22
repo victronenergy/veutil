@@ -18,6 +18,14 @@ VeQItem::VeQItem(VeQItemProducer *producer, QObject *parent) :
 {
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+VeQItem::VeQItem(VeQItemProducer *producer) :
+	VeQItem(producer, nullptr)
+{
+}
+#pragma GCC diagnostic pop
+
 VeQItem::~VeQItem() {
 	foreach (VeQItem *child, mChilds)
 		itemDeleteChild(child);
@@ -467,3 +475,14 @@ VeQItemProxy::VeQItemProxy(VeQItem *srcItem) :
 	connect(mSrcItem, SIGNAL(dynamicPropertyChanged(char const *,QVariant)),
 			SIGNAL(dynamicPropertyChanged(char const *,QVariant)));
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+VeQItemLocal::VeQItemLocal(VeQItemProducer *producer, QObject *parent) :
+	VeQItem(producer, parent)
+{}
+
+VeQItemLocal::VeQItemLocal(VeQItemProducer *producer) :
+	VeQItemLocal(producer, nullptr)
+{}
+#pragma GCC diagnostic pop

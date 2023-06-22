@@ -96,9 +96,10 @@ public:
 	 * NOTE: the parent is a bit misleading, and should in general _not_ be used,
 	 * itemAddChild will set the parent to its actual parent, and the destructor
 	 * will free the whole tree. Its only usefull for items which are not part of
-	 * a tree, and that is never the case.
+	 * a tree, and that is never the case. So lets deprecate that constructor.
 	 */
-	explicit VeQItem(VeQItemProducer *producer, QObject *parent = 0);
+	explicit VeQItem(VeQItemProducer *producer, QObject *parent) __attribute((deprecated));
+	explicit VeQItem(VeQItemProducer *producer);
 	~VeQItem();
 
 	/**
@@ -410,10 +411,8 @@ class VE_QITEM_EXPORT VeQItemLocal : public VeQItem
 	Q_OBJECT
 
 public:
-
-	explicit VeQItemLocal(VeQItemProducer *producer, QObject *parent = 0) :
-		VeQItem(producer, parent)
-	{}
+	explicit VeQItemLocal(VeQItemProducer *producer, QObject *parent) __attribute((deprecated));
+	explicit VeQItemLocal(VeQItemProducer *producer);
 
 	int setValue(QVariant const &value) override
 	{

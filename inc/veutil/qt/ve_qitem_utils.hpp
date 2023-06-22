@@ -29,7 +29,9 @@ public:
 		Q_UNUSED(isTrusted);
 
 		qDebug() << "A child" << id << "cannot be created for" << uniqueId();
-		return new VeQItem(0, this);
+		Q_ASSERT(false);
+
+		return nullptr;
 	}
 };
 

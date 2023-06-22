@@ -421,6 +421,10 @@ public:
 
 		return 0;
 	}
+
+	QString getText() override {
+		return getValue().toString();
+	}
 };
 
 /*

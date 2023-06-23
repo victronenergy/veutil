@@ -269,13 +269,15 @@ public:
 
 	void foreachChildFirst(QObject *obj, const char *member, void *ctx = 0);
 	void foreachChildFirst(VeQItemForeach *each);
-	void foreachChildFirst(std::function<void(VeQItem *)> const & f);
+	void foreachChildFirst(std::function<void(VeQItem *)> const &f);
+	void forAllChildren(std::function<void(VeQItem *)> const &f);
 
 	void foreachParentFirst(QObject *obj, const char *member, void *ctx = 0);
 	void foreachParentFirst(VeQItemForeach *each);
 	void foreachParentFirst(std::function<void(VeQItem *)> const & f);
 
 	VeQItem *itemAddChild(QString id, VeQItem *item);
+	void itemRemoveChild(VeQItem *child);
 	void itemDeleteChild(VeQItem *child);
 	void itemDelete();
 

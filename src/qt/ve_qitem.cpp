@@ -26,9 +26,12 @@ VeQItem::VeQItem(VeQItemProducer *producer) :
 }
 #pragma GCC diagnostic pop
 
-VeQItem::~VeQItem() {
-	foreach (VeQItem *child, mChilds)
-		itemDeleteChild(child);
+VeQItem::~VeQItem()
+{
+	// Destruct the tree from the childs up, so the parents remain valid during desctruction.
+	// The default QObject destructor runs the otherway around and then partially destucted
+	// objects are emitting signals.
+	forAllChildren([](VeQItem *child) { child->itemDelete(); });
 }
 
 void VeQItem::setParent(QObject *parent)
@@ -416,11 +419,17 @@ void VeQItem::foreachChildFirst(QObject *obj, const char *member, void *ctx)
 	foreachChildFirst(&each);
 }
 
-void VeQItem::foreachChildFirst(std::function<void(VeQItem *)> const & f)
+void VeQItem::foreachChildFirst(std::function<void(VeQItem *)> const &f)
 {
 	for (VeQItem *child: mChilds)
 		child->foreachChildFirst(f);
 	f(this);
+}
+
+void VeQItem::forAllChildren(std::function<void(VeQItem *)> const &f)
+{
+	for (VeQItem *child: mChilds)
+		child->foreachChildFirst(f);
 }
 
 void VeQItem::foreachParentFirst(VeQItemForeach *each)

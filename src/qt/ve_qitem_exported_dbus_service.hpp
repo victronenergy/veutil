@@ -26,7 +26,7 @@ public:
 
 private slots:
 	void onChildAdded(VeQItem *child);
-	void onChildRemoved(VeQItem *child);
+	void onChildAboutToBeRemoved(VeQItem *child);
 	void onValueChanged();
 	void onTextChanged();
 	void onDynamicPropertyChanged(char const *name);

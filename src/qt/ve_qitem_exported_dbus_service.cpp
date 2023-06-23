@@ -294,7 +294,7 @@ void VeQItemExportedDbusService::connectItem(VeQItem *item)
 			this, SLOT(onDynamicPropertyChanged(const char*)));
 
 	connect(item, SIGNAL(childAdded(VeQItem*)), this, SLOT(onChildAdded(VeQItem *)));
-	connect(item, SIGNAL(childRemoved(VeQItem*)), this, SLOT(onChildRemoved(VeQItem *)));
+	connect(item, SIGNAL(childAboutToBeRemoved(VeQItem*)), this, SLOT(onChildAboutToBeRemoved(VeQItem *)));
 
 	for (VeQItem *child: item->itemChildren())
 		connectItem(child);
@@ -313,8 +313,10 @@ void VeQItemExportedDbusService::onChildAdded(VeQItem *child)
 	connectItem(child);
 }
 
-void VeQItemExportedDbusService::onChildRemoved(VeQItem *child)
+void VeQItemExportedDbusService::onChildAboutToBeRemoved(VeQItem *child)
 {
+	// flush to make sure there are no dangling pointers in the queue
+	processPending();
 	disconnectItem(child);
 }
 

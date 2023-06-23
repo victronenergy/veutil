@@ -26,6 +26,8 @@ VeQItem::VeQItem(VeQItemProducer *producer) :
 }
 #pragma GCC diagnostic pop
 
+// NOTE: to remove branches, call item->itemDelete() instead of delete item, otherwise
+// the signal for the item itself will not be emitted.
 VeQItem::~VeQItem()
 {
 	// Destruct the tree from the childs up, so the parents remain valid during desctruction.

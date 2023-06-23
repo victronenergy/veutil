@@ -11,10 +11,11 @@ static unsigned int udev_device_get_ifindex(struct udev_device *d)
 	return strtoul(val, NULL, 10);
 }
 
-CanInterfaceMonitor::CanInterfaceMonitor(VeQItemSettings *settings, QObject *parent) :
+CanInterfaceMonitor::CanInterfaceMonitor(VeQItemSettings *settings, VeQItem *service, QObject *parent) :
 	QObject(parent),
 	mCanMonitor(QUdev::instance()),
-	mSettings(settings)
+	mSettings(settings),
+	mService(service)
 {
 	// React to CAN-bus interface changes.
 	auto monitor = mCanMonitor.monitor();
@@ -84,7 +85,7 @@ void CanInterfaceMonitor::addCanInterface(unsigned int ifindex, udev_device *dev
 		config = CanBusProfiles::CanForcedVeCan;
 	}
 
-	auto canInterface = new CanBusProfiles(mSettings, QString::fromUtf8(sysname),
+	auto canInterface = new CanBusProfiles(mSettings, mService, QString::fromUtf8(sysname),
 										   defaultProfile, config, this);
 	char const *name = udev_device_get_property_value(dev, "VE_NAME");
 	if (name)

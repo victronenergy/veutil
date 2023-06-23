@@ -25,7 +25,7 @@ void CanBusProfile::disableProfile()
 	}
 }
 
-CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, QString interface,
+CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QString interface,
 							   CanBusProfile::CanProfile defaultProfile, CanBusConfig config,
 							   QObject *parent) :
 	QObject(parent),
@@ -73,6 +73,14 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, QString interface,
 	VeQItem *item = settings->add(QString("Canbus/%1/Profile").arg(interface),
 								  defaultProfile, 0, mProfiles.count() - 1);
 	item->getValueAndChanges(this, SLOT(dbusItemChanged()));
+
+	mInterfaceItem = service->itemGetOrCreate("CanBus/Interface/" + interface);
+	mInterfaceItem->itemAddChild("Statistics", new VeQItemCanStats(interface));
+}
+
+CanBusProfiles::~CanBusProfiles()
+{
+	mInterfaceItem->itemDelete();
 }
 
 void CanBusProfiles::changeCanBusBitRate(int bitrate)
@@ -150,4 +158,14 @@ void CanBusService::dbusItemChanged(VeQItem *item, QVariant var)
 	qDebug() << "[CanService] DBus service" << mServicePath << "changed:" << item->id() << "-" << var.toString();
 
 	checkStart();
+}
+
+QVariant VeQItemCanStats::getValue()
+{
+	QProcess process;
+
+	process.start("ip", QStringList() << "-json" << "-details" << "-statistics" << "link" << "show" << mInterface);
+	process.waitForFinished();
+
+	return QString::fromUtf8(process.readAllStandardOutput()).trimmed();
 }

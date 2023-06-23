@@ -11,7 +11,7 @@ class CanInterfaceMonitor : public QObject
 	Q_OBJECT
 
 public:
-	CanInterfaceMonitor(VeQItemSettings *settings, QObject *parent = nullptr);
+	CanInterfaceMonitor(VeQItemSettings *settings, VeQItem *service, QObject *parent = nullptr);
 	void enumerate();
 	QVariantMapList canInfo();
 
@@ -28,6 +28,7 @@ private:
 	void removeCanInterface(unsigned ifindex);
 
 	VeQItemSettings *mSettings;
+	VeQItem *mService;
 	QMap<unsigned, CanBusProfiles*> mCanInterfaces;
 };
 

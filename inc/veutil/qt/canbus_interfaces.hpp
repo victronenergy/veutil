@@ -2,6 +2,22 @@
 
 #include <QObject>
 #include <veutil/qt/daemontools_service.hpp>
+#include <veutil/qt/ve_qitem_utils.hpp>
+
+class VeQItemCanStats : public VeQItemExportedLeaf
+{
+public:
+	explicit VeQItemCanStats(QString const &interface) :
+		VeQItemExportedLeaf(),
+		mInterface(interface)
+	{}
+
+	QVariant getValue() override;
+
+private:
+	QString mInterface;
+};
+
 
 class CanBusService : public DaemonToolsService
 {
@@ -85,9 +101,10 @@ public:
 				CanForcedVeCan,
 		};
 
-		CanBusProfiles(VeQItemSettings *settings, QString interface,
+		CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QString interface,
 								   CanBusProfile::CanProfile defaultProfile, CanBusConfig config,
 								   QObject *parent = 0);
+		~CanBusProfiles();
 
 		void setUiName(const QString &name) { mUiName = name; }
 		QString getUiName() const { return mUiName.isEmpty() ? mInterface : mUiName; }
@@ -110,5 +127,6 @@ private:
 		QString mInterface;
 		CanBusConfig mConfig;
 		QString mUiName;
+		VeQItem *mInterfaceItem;
 };
 

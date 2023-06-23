@@ -25,8 +25,8 @@ public:
 	bool handleMessage(const QDBusMessage &message, const QDBusConnection &connection) override;
 
 private slots:
-	void onChildAdded();
-	void onChildRemoved();
+	void onChildAdded(VeQItem *child);
+	void onChildRemoved(VeQItem *child);
 	void onValueChanged();
 	void onTextChanged();
 	void onDynamicPropertyChanged(char const *name);

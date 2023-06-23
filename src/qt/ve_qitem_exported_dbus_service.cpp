@@ -293,8 +293,8 @@ void VeQItemExportedDbusService::connectItem(VeQItem *item)
 	connect(item, SIGNAL(dynamicPropertyChanged(const char*,QVariant)),
 			this, SLOT(onDynamicPropertyChanged(const char*)));
 
-	connect(item, SIGNAL(childAdded(VeQItem*)), this, SLOT(onChildAdded()));
-	connect(item, SIGNAL(childRemoved(VeQItem*)), this, SLOT(onChildRemoved()));
+	connect(item, SIGNAL(childAdded(VeQItem*)), this, SLOT(onChildAdded(VeQItem *)));
+	connect(item, SIGNAL(childRemoved(VeQItem*)), this, SLOT(onChildRemoved(VeQItem *)));
 
 	for (VeQItem *child: item->itemChildren())
 		connectItem(child);
@@ -308,16 +308,14 @@ void VeQItemExportedDbusService::disconnectItem(VeQItem *item)
 		disconnectItem(child);
 }
 
-void VeQItemExportedDbusService::onChildAdded()
+void VeQItemExportedDbusService::onChildAdded(VeQItem *child)
 {
-	VeQItem *item = static_cast<VeQItem *>(sender());
-	connectItem(item);
+	connectItem(child);
 }
 
-void VeQItemExportedDbusService::onChildRemoved()
+void VeQItemExportedDbusService::onChildRemoved(VeQItem *child)
 {
-	VeQItem *item = static_cast<VeQItem *>(sender());
-	disconnectItem(item);
+	disconnectItem(child);
 }
 
 void VeQItemExportedDbusService::onValueChanged()

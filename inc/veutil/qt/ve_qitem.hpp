@@ -221,11 +221,11 @@ public:
 	 */
 	void discardPreview();
 
-	Children const &itemChildren() const { return mChilds; }
+	Children const &itemChildren() const { return mChildren; }
 	State getState() { return mState; }
 	State getTextState() { return mTextState; }
 	bool isLeaf() { return mIsLeaf; }
-	bool hasChildren() { return mChilds.count() != 0; }
+	bool hasChildren() { return mChildren.count() != 0; }
 
 	/**
 	 * returns if the item ever got in a synchronized state.
@@ -331,7 +331,7 @@ private:
 
 protected:
 	QString mId;
-	Children mChilds;
+	Children mChildren;
 	QVariant mValue;
 	QVariant mLastValidValue;
 	QVariant mValueWhilePreviewing;

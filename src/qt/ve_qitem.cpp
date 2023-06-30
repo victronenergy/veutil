@@ -118,11 +118,11 @@ void VeQItem::watchedChanged()
 
 VeQItem *VeQItem::itemChild(int n)
 {
-	if (n >= mChilds.count())
+	if (n >= mChildren.count())
 		return 0;
 
 	// check if this is expensive
-	return mChilds[mChilds.keys()[n]];
+	return mChildren[mChildren.keys()[n]];
 }
 
 VeQItem *VeQItem::itemAddChild(QString id, VeQItem *item)
@@ -131,7 +131,7 @@ VeQItem *VeQItem::itemAddChild(QString id, VeQItem *item)
 	item->setParent(this);
 	mIsLeaf = false;
 	emit childAboutToBeAdded(item);
-	mChilds[id] = item;
+	mChildren[id] = item;
 	emit childAdded(item);
 	item->afterAdd();
 
@@ -145,7 +145,7 @@ void VeQItem::afterAdd()
 void VeQItem::itemDeleteChild(VeQItem *child)
 {
 	emit childAboutToBeRemoved(child);
-	mChilds.remove(child->mId);
+	mChildren.remove(child->mId);
 	emit childRemoved(child);
 	child->deleteLater();
 }
@@ -411,7 +411,7 @@ int VeQItem::index()
 
 void VeQItem::foreachChildFirst(VeQItemForeach *each)
 {
-	for (VeQItem *child: mChilds)
+	for (VeQItem *child: mChildren)
 		child->foreachChildFirst(each);
 	each->handleItem(this);
 }
@@ -424,7 +424,7 @@ void VeQItem::foreachChildFirst(QObject *obj, const char *member, void *ctx)
 
 void VeQItem::foreachChildFirst(std::function<void(VeQItem *)> const &f)
 {
-	for (VeQItem *child: mChilds)
+	for (VeQItem *child: mChildren)
 		child->foreachChildFirst(f);
 	f(this);
 }
@@ -432,7 +432,7 @@ void VeQItem::foreachChildFirst(std::function<void(VeQItem *)> const &f)
 // Loop over a copy, so the item itself can be removed.
 void VeQItem::foreachChildFirstSafe(const std::function<void (VeQItem *)> &f)
 {
-	Children copy = mChilds;
+	Children copy = mChildren;
 	for (VeQItem *child: copy)
 		child->foreachChildFirstSafe(f);
 	f(this);
@@ -440,14 +440,14 @@ void VeQItem::foreachChildFirstSafe(const std::function<void (VeQItem *)> &f)
 
 void VeQItem::forAllChildren(std::function<void(VeQItem *)> const &f)
 {
-	for (VeQItem *child: mChilds)
+	for (VeQItem *child: mChildren)
 		child->foreachChildFirst(f);
 }
 
 // Loop over a copy, so the item itself can be removed.
 void VeQItem::forAllChildrenSafe(const std::function<void (VeQItem *)> &f)
 {
-	Children copy = mChilds;
+	Children copy = mChildren;
 	for (VeQItem *child: copy)
 		child->foreachChildFirstSafe(f);
 }
@@ -455,7 +455,7 @@ void VeQItem::forAllChildrenSafe(const std::function<void (VeQItem *)> &f)
 void VeQItem::foreachParentFirst(VeQItemForeach *each)
 {
 	each->handleItem(this);
-	for (VeQItem *child: mChilds)
+	for (VeQItem *child: mChildren)
 		child->foreachParentFirst(each);
 }
 
@@ -468,7 +468,7 @@ void VeQItem::foreachParentFirst(QObject *obj, const char *member, void *ctx)
 void VeQItem::foreachParentFirst(std::function<void(VeQItem *)> const & f)
 {
 	f(this);
-	foreach (VeQItem *child, mChilds)
+	foreach (VeQItem *child, mChildren)
 		child->foreachParentFirst(f);
 }
 

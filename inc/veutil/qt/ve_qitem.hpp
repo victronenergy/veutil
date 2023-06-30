@@ -270,7 +270,9 @@ public:
 	void foreachChildFirst(QObject *obj, const char *member, void *ctx = 0);
 	void foreachChildFirst(VeQItemForeach *each);
 	void foreachChildFirst(std::function<void(VeQItem *)> const &f);
+	void foreachChildFirstSafe(std::function<void(VeQItem *)> const &f);
 	void forAllChildren(std::function<void(VeQItem *)> const &f);
+	void forAllChildrenSafe(std::function<void(VeQItem *)> const &f);
 
 	void foreachParentFirst(QObject *obj, const char *member, void *ctx = 0);
 	void foreachParentFirst(VeQItemForeach *each);

@@ -428,10 +428,27 @@ void VeQItem::foreachChildFirst(std::function<void(VeQItem *)> const &f)
 	f(this);
 }
 
+// Loop over a copy, so the item itself can be removed.
+void VeQItem::foreachChildFirstSafe(const std::function<void (VeQItem *)> &f)
+{
+	Children copy = mChilds;
+	for (VeQItem *child: copy)
+		child->foreachChildFirst(f);
+	f(this);
+}
+
 void VeQItem::forAllChildren(std::function<void(VeQItem *)> const &f)
 {
 	for (VeQItem *child: mChilds)
 		child->foreachChildFirst(f);
+}
+
+// Loop over a copy, so the item itself can be removed.
+void VeQItem::forAllChildrenSafe(const std::function<void (VeQItem *)> &f)
+{
+	Children copy = mChilds;
+	for (VeQItem *child: copy)
+		child->foreachChildFirstSafe(f);
 }
 
 void VeQItem::foreachParentFirst(VeQItemForeach *each)

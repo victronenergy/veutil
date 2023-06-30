@@ -153,7 +153,8 @@ void VeQItem::itemDeleteChild(VeQItem *child)
 // deletes the item and removes it from its parent
 void VeQItem::itemDelete()
 {
-	itemParent()->itemDeleteChild(this);
+	if (itemParent())
+		itemParent()->itemDeleteChild(this);
 }
 
 QString VeQItem::getRelId(VeQItem *ancestor)

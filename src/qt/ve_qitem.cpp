@@ -33,7 +33,7 @@ VeQItem::~VeQItem()
 	// Destruct the tree from the childs up, so the parents remain valid during desctruction.
 	// The default QObject destructor runs the otherway around and then partially destucted
 	// objects are emitting signals.
-	forAllChildren([](VeQItem *child) { child->itemDelete(); });
+	forAllChildrenSafe([](VeQItem *child) { child->itemDelete(); });
 }
 
 void VeQItem::setParent(QObject *parent)

@@ -434,7 +434,7 @@ void VeQItem::foreachChildFirstSafe(const std::function<void (VeQItem *)> &f)
 {
 	Children copy = mChilds;
 	for (VeQItem *child: copy)
-		child->foreachChildFirst(f);
+		child->foreachChildFirstSafe(f);
 	f(this);
 }
 

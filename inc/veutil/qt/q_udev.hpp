@@ -44,8 +44,8 @@ public:
 	~QUdev() { udev_unref(mUdev); }
 
 	static QUdev *instance() {
-		static QUdev mInstance;
-		return &mInstance;
+		static QUdev *mInstance = new QUdev();
+		return mInstance;
 	}
 
 	struct udev *udev() const { return mUdev; }

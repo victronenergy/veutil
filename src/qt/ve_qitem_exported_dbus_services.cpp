@@ -24,8 +24,8 @@ bool VeQItemExportedDbusServices::open(const QString &address)
 
 void VeQItemExportedDbusServices::onChildAdded(VeQItem *item)
 {
-	connect(item, SIGNAL(stateChanged(VeQItem::State)),
-			this, SLOT(onRootStateChanged()));
+	connect(item, SIGNAL(stateChanged(VeQItem::State)), this, SLOT(onRootStateChanged()));
+
 	if (item->getState() != VeQItem::Offline && item->getState() != VeQItem::Idle)
 		addChild(item);
 }
@@ -39,16 +39,16 @@ void VeQItemExportedDbusServices::onChildRemoved(VeQItem *item)
 void VeQItemExportedDbusServices::onRootStateChanged()
 {
 	VeQItem *item = static_cast<VeQItem *>(sender());
-	if (item->getState() == VeQItem::Offline || item->getState() == VeQItem::Idle) {
+
+	if (item->getState() == VeQItem::Offline || item->getState() == VeQItem::Idle)
 		removeChild(item);
-	} else {
+	else
 		addChild(item);
-	}
 }
 
 void VeQItemExportedDbusServices::addServices()
 {
-	for (int i=0; ; ++i) {
+	for (int i = 0; ; ++i) {
 		VeQItem *item = mRoot->itemChild(i);
 		if (item == 0)
 			break;
@@ -62,13 +62,15 @@ void VeQItemExportedDbusServices::addChild(VeQItem *item)
 		if (service->root() == item)
 			return;
 	}
+
 	QDBusConnection connection = getConnection(mDbusAddress, item->id());
-	if (!connection.isConnected()) {
+	if (!connection.isConnected())
 		qDebug() << "[VeQItemDbusPublisher] Could not connect to D-Bus. Address:" << mDbusAddress
 				 << "bus name:" << item->id();
-	}
+
 	VeQItemExportedDbusService *service = new VeQItemExportedDbusService(connection, item, this);
 	mServices.append(service);
+
 	if (service->registerService())
 		qDebug() << "[VeQItemDbusPublisher] Registered service" << item->id();
 	else
@@ -97,7 +99,9 @@ QDBusConnection VeQItemExportedDbusServices::getConnection(const QString &addres
 	// 30 secs or so if this fails when connection by tcp/ip...
 	if (address == "session")
 		return QDBusConnection::connectToBus(QDBusConnection::SessionBus, qtDbusName);
+
 	if (address == "system")
 		return QDBusConnection::connectToBus(QDBusConnection::SystemBus, qtDbusName);
+
 	return QDBusConnection::connectToBus(address, qtDbusName);
 }

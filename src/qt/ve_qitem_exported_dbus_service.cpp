@@ -31,12 +31,12 @@ QString VeQItemExportedDbusService::serviceName() const
 bool VeQItemExportedDbusService::registerService()
 {
 	if (!mConnection.registerVirtualObject("/", this, QDBusConnection::SubPath)) {
-		qDebug() << "[VeQItemDbusVirtualObject] Could not register virtual object";
+		qDebug() << "[VeQItemExportedDbusService] Could not register virtual object";
 		return false;
 	}
 
 	if (!mConnection.registerService(serviceName())) {
-		qDebug() << "[VeQItemDbusVirtualObject] Could not register service" << serviceName();
+		qDebug() << "[VeQItemExportedDbusService] Could not register service" << serviceName();
 		return false;
 	}
 
@@ -46,7 +46,7 @@ bool VeQItemExportedDbusService::registerService()
 bool VeQItemExportedDbusService::unregisterService()
 {
 	if (!mConnection.unregisterService(serviceName())) {
-		qDebug() << "[VeQItemDbusVirtualObject] Could not unregister service" << serviceName();
+		qDebug() << "[VeQItemExportedDbusService] Could not unregister service" << serviceName();
 		return false;
 	}
 
@@ -133,7 +133,7 @@ bool VeQItemExportedDbusService::handleMessage(const QDBusMessage &message,
 		break;
 	}
 	default:
-		qDebug() << "[VeQItemDbusVirtualObject] unhandled message type:" << message.type();
+		qDebug() << "[VeQItemExportedDbusService] unhandled message type:" << message.type();
 		break;
 	}
 	return false;
@@ -279,7 +279,7 @@ void VeQItemExportedDbusService::processPending()
 	QDBusMessage message = QDBusMessage::createSignal("/", "com.victronenergy.BusItem", "ItemsChanged");
 	message << QVariant::fromValue(items);
 	if (!mConnection.send(message)) {
-		qDebug() << "[VeQItemDbusVirtualObject] Could not send ItemsChanged signal for" << mRoot->id();
+		qDebug() << "[VeQItemExportedDbusService] Could not send ItemsChanged signal for" << mRoot->id();
 		return;
 	}
 

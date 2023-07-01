@@ -65,16 +65,16 @@ void VeQItemExportedDbusServices::addChild(VeQItem *item)
 
 	QDBusConnection connection = getConnection(mDbusAddress, item->id());
 	if (!connection.isConnected())
-		qDebug() << "[VeQItemDbusPublisher] Could not connect to D-Bus. Address:" << mDbusAddress
+		qDebug() << "[VeQItemExportedDbusServices] Could not connect to D-Bus. Address:" << mDbusAddress
 				 << "bus name:" << item->id();
 
 	VeQItemExportedDbusService *service = new VeQItemExportedDbusService(connection, item, this);
 	mServices.append(service);
 
 	if (service->registerService())
-		qDebug() << "[VeQItemDbusPublisher] Registered service" << item->id();
+		qDebug() << "[VeQItemExportedDbusServices] Registered service" << item->id();
 	else
-		qDebug() << "[VeQItemDbusPublisher] Could not register service" << item->id();
+		qDebug() << "[VeQItemExportedDbusServices] Could not register service" << item->id();
 }
 
 void VeQItemExportedDbusServices::removeChild(VeQItem *item)
@@ -83,9 +83,9 @@ void VeQItemExportedDbusServices::removeChild(VeQItem *item)
 		if (service->root() == item) {
 			mServices.removeOne(service);
 			if (service->unregisterService())
-				qDebug() << "[VeQItemDbusPublisher] Unregistered service" << item->id();
+				qDebug() << "[VeQItemExportedDbusServices] Unregistered service" << item->id();
 			else
-				qDebug() << "[VeQItemDbusPublisher] Could not unregister service" << item->id();
+				qDebug() << "[VeQItemExportedDbusServices] Could not unregister service" << item->id();
 			delete service;
 			break;
 		}

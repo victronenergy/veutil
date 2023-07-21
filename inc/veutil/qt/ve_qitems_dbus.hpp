@@ -22,7 +22,9 @@ class VeQItemDbus : public VeQItem, protected QDBusContext
 public:
 	VeQItemDbus(VeQItemDbusProducer *producer);
 	bool introspect();
+	using VeQItem::getValue;
 	QVariant getValue(bool force) override;
+	using VeQItem::getText;
 	QString getText(bool force) override;
 	QVariant itemProperty(const char *name) override { return itemProperty(name, false); }
 	int setValue(QVariant const &value) override;

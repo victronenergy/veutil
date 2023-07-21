@@ -359,9 +359,11 @@ class VE_QITEM_EXPORT VeQItemProxy : public VeQItem
 public:
 	VeQItemProxy(VeQItem *srcItem);
 
-	QVariant getValue() override { return mSrcItem->getValue(); }
+	using VeQItem::getValue;
+	QVariant getValue(bool force) override { return mSrcItem->getValue(force); }
 	QVariant getLocalValue() override { return mSrcItem->getLocalValue(); }
-	QString getText() override { return mSrcItem->getText(); }
+	using VeQItem::getText;
+	QString getText(bool force) override { return mSrcItem->getText(force); }
 	int setValue(QVariant const &value) override { return mSrcItem->setValue(value); }
 	QVariant itemProperty(const char *name) override { return mSrcItem->itemProperty(name); }
 
@@ -426,7 +428,10 @@ public:
 		return 0;
 	}
 
-	QString getText() override {
+	using VeQItem::getText;
+
+	QString getText(bool force) override {
+		Q_UNUSED(force);
 		return getValue().toString();
 	}
 };

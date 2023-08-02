@@ -32,6 +32,9 @@ public:
 
 	int setValue(QVariant const &value) override;
 
+    QVariant getValue() override;
+    QVariant getValue(bool force) override;
+
 protected:
 	void setParent(QObject *parent) override;
 

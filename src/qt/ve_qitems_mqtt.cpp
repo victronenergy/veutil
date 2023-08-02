@@ -37,6 +37,19 @@ int VeQItemMqtt::setValue(QVariant const &value)
 	return 0;
 }
 
+QVariant VeQItemMqtt::getValue()
+{
+    return getValue(false);
+}
+
+QVariant VeQItemMqtt::getValue(bool force)
+{
+    if (force && mqttProducer()) {
+        mqttProducer()->requestValue(uniqueId());
+    }
+    return VeQItem::getValue(force);
+}
+
 // This is called by VeQItem::itemAddChild().
 // TODO: may not be necessary, remove?
 void VeQItemMqtt::setParent(QObject *parent)

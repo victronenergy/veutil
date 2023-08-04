@@ -379,12 +379,6 @@ void VeQItemMqttProducer::onSubscriptionMessageReceived(const QMqttMessage &mess
 		const QString keepaliveTopic = notificationPrefix + QStringLiteral("/keepalive");
 		if (topicName.compare(keepaliveTopic, Qt::CaseInsensitive) == 0) {
 			// ignore keepalive topic.
-		} else if (!mIsVrmBroker && message.retain()) {
-			// ignore retained messages, as for internet brokers (VRM)
-			// nothing will "unpublish" the topic for a device which goes offline.
-			// see issue #313 in gui-v2.
-			// for now, only enable this for non-VRM (i.e. local) brokers,
-			// as VRM is not yet using FlashMQ.
 		} else {
 			// we have a topic message which we need to expose via VeQItem.
 			const QString path = topicName.mid(notificationPrefix.size() + 1);

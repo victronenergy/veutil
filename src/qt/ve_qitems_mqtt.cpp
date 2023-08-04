@@ -529,6 +529,8 @@ WebSocketDevice::WebSocketDevice(QObject *parent)
 		this, &WebSocketDevice::disconnected);
 	connect(&mWebSocket, &QWebSocket::binaryMessageReceived,
 		this, &WebSocketDevice::onBinaryMessageReceived);
+	connect(this, &WebSocketDevice::disconnected,
+		this, [this] { close(); });
 }
 
 void WebSocketDevice::setUrl(const QUrl &url)

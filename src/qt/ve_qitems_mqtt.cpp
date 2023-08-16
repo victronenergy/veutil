@@ -7,7 +7,7 @@
 //--
 
 VeQItemMqtt::VeQItemMqtt(VeQItemMqttProducer *producer)
-	: VeQItem(producer, nullptr)
+	: VeQItem(producer)
 {
 	connect(producer, &VeQItemMqttProducer::connectionStateChanged,
 		this, [this] {
@@ -39,15 +39,15 @@ int VeQItemMqtt::setValue(QVariant const &value)
 
 QVariant VeQItemMqtt::getValue()
 {
-    return getValue(false);
+	return getValue(false);
 }
 
 QVariant VeQItemMqtt::getValue(bool force)
 {
-    if (force && mqttProducer()) {
-        mqttProducer()->requestValue(uniqueId());
-    }
-    return VeQItem::getValue(force);
+	if (force && mqttProducer()) {
+		mqttProducer()->requestValue(uniqueId());
+	}
+	return VeQItem::getValue(force);
 }
 
 // This is called by VeQItem::itemAddChild().
@@ -95,7 +95,7 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 
 	mKeepAliveTimer->setInterval(1000 * 30);
 	connect(mKeepAliveTimer, &QTimer::timeout,
-		[this] {
+		this, [this] {
 			doKeepAlive(/* suppressRepublish = */ true);
 		});
 	// start the timer once we have sent the first (empty) keepalive after subscribing.
@@ -176,7 +176,7 @@ void VeQItemMqttProducer::open(
 			this, [this, protocolVersion] {
 				mMqttConnection->setProtocolVersion(protocolVersion);
 				mMqttConnection->setTransport(mWebSocket, QMqttClient::IODevice);
-				QMetaObject::invokeMethod(this, [this] { aboutToConnect(); }, Qt::QueuedConnection);
+				QMetaObject::invokeMethod(this, [this] { Q_EMIT aboutToConnect(); }, Qt::QueuedConnection);
 			});
 
 		setConnectionState(Connecting);
@@ -218,7 +218,7 @@ void VeQItemMqttProducer::open(const QHostAddress &host, int port)
 		connect(mMqttConnection, &QMqttClient::messageReceived,
 			this, &VeQItemMqttProducer::onMessageReceived);
 
-		QMetaObject::invokeMethod(this, [this] { aboutToConnect(); }, Qt::QueuedConnection);
+		QMetaObject::invokeMethod(this, [this] { Q_EMIT aboutToConnect(); }, Qt::QueuedConnection);
 		setConnectionState(Connecting);
 	}, Qt::QueuedConnection);
 }

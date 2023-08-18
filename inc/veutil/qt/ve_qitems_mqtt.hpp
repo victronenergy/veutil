@@ -45,6 +45,7 @@ private:
 class VeQItemMqttProducer : public VeQItemProducer
 {
 	Q_OBJECT
+	Q_PROPERTY(HeartbeatState heartbeatState READ heartbeatState NOTIFY heartbeatStateChanged)
 	Q_PROPERTY(ConnectionState connectionState READ connectionState NOTIFY connectionStateChanged)
 	Q_PROPERTY(QMqttClient::ClientError error READ error NOTIFY errorChanged)
 	Q_PROPERTY(QString portalId READ portalId WRITE setPortalId NOTIFY portalIdChanged)
@@ -63,6 +64,17 @@ public:
 	};
 	Q_ENUM(ConnectionState)
 
+	// The heartbeat state tracks whether the CerboGX is actively alive
+	// and writing heartbeat timestamp updates to the MQTT broker.
+	// We might be actively connected to the VRM broker, but the actual
+	// device itself might have gone offline and so the data is "not live".
+	enum HeartbeatState {
+		HeartbeatActive,
+		HeartbeatMissing,
+		HeartbeatInactive,
+	};
+	Q_ENUM(HeartbeatState)
+
 	VeQItemMqttProducer(VeQItem *root, const QString &id, const QString &clientIdPrefix, QObject *parent = nullptr);
 
 	VeQItem *createItem() override;
@@ -79,6 +91,7 @@ public:
 	void setCredentials(const QString &username, const QString &password);
 	bool publishValue(const QString &uid, const QVariant &value);
 	bool requestValue(const QString &uid);
+	HeartbeatState heartbeatState() const;
 	ConnectionState connectionState() const;
 	QMqttClient::ClientError error() const;
 
@@ -86,6 +99,7 @@ public:
 	void setPortalId(const QString &portalId);
 
 Q_SIGNALS:
+	void heartbeatStateChanged();
 	void connectionStateChanged();
 	void errorChanged();
 	void portalIdChanged();
@@ -106,11 +120,13 @@ private Q_SLOTS:
 	void doKeepAlive(bool suppressRepublish = false);
 
 private:
+	void setHeartbeatState(HeartbeatState heartbeatState);
 	void setConnectionState(ConnectionState connectionState);
 	void setError(QMqttClient::ClientError error);
 	void parseMessage(const QString &path, const QByteArray &message);
 
 	QTimer *mKeepAliveTimer;
+	QTimer *mHeartBeatTimer;
 	QTimer *mReadyStateTimer;
 	QTimer *mReadyStateFallbackTimer;
 	QMqttClient *mMqttConnection;
@@ -123,12 +139,14 @@ private:
 	QUrl mUrl;
 	QString mHostName;
 	int mPort;
+	HeartbeatState mHeartbeatState;
 	ConnectionState mConnectionState;
 	const int mReconnectAttemptIntervals[6] = { 250, 1000, 2000, 5000, 10000, 30000 };
 	quint16 mAutoReconnectAttemptCounter;
 	const quint16 mAutoReconnectMaxAttempts;
 	QMqttClient::ClientError mError;
 	QMqttClient::ProtocolVersion mProtocolVersion;
+	int mMissedHeartbeats;
 	bool mReceivedMessage;
 	bool mIsVrmBroker;
 };

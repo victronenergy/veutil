@@ -68,15 +68,18 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 		VeQItem *root, const QString &id, const QString &clientIdPrefix, QObject *parent)
 	: VeQItemProducer(root, id, parent),
 	  mKeepAliveTimer(new QTimer(this)),
+	  mHeartBeatTimer(new QTimer(this)),
 	  mReadyStateTimer(new QTimer(this)),
 	  mReadyStateFallbackTimer(new QTimer(this)),
 	  mMqttConnection(nullptr),
 	  mPort(0),
+	  mHeartbeatState(HeartbeatInactive),
 	  mConnectionState(Idle),
 	  mAutoReconnectAttemptCounter(0),
 	  mAutoReconnectMaxAttempts(sizeof(mReconnectAttemptIntervals)/sizeof(mReconnectAttemptIntervals[0])),
 	  mError(QMqttClient::NoError),
 	  mProtocolVersion(QMqttClient::MQTT_3_1_1),
+	  mMissedHeartbeats(0),
 	  mReceivedMessage(false),
 	  mIsVrmBroker(false)
 {
@@ -93,12 +96,32 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 	const quint64 uniqueId = QRandomGenerator::global()->generate64();
 	mClientId.append(QStringLiteral("%1").arg(uniqueId, 16, 16, QLatin1Char('0')));
 
+	// start the timer once we have sent the first (empty) keepalive after subscribing.
 	mKeepAliveTimer->setInterval(1000 * 30);
 	connect(mKeepAliveTimer, &QTimer::timeout,
 		this, [this] {
 			doKeepAlive(/* suppressRepublish = */ true);
 		});
-	// start the timer once we have sent the first (empty) keepalive after subscribing.
+
+	// start the timer once we have received the first heartbeat.
+	mHeartBeatTimer->setInterval(1000 * 5); // heartbeat interval is 3s, but allow extra.
+	connect(mHeartBeatTimer, &QTimer::timeout,
+		this, [this] {;
+#ifdef MQTT_WEBSOCKETS_ENABLED
+			if (mWebSocket && !mWebSocket->isOpen()) {
+				qWarning() << "Missed heartbeat due to websocket disconnection";
+				onDisconnected();
+				return;
+			}
+#endif
+			++mMissedHeartbeats;
+			qWarning() << "Missed" << mMissedHeartbeats << "heatbeat(s)!";
+			if (mMissedHeartbeats == 2) {
+				setHeartbeatState(HeartbeatMissing);
+			} else if (mMissedHeartbeats > 2) {
+				setHeartbeatState(HeartbeatInactive);
+			}
+		});
 
 	mReadyStateTimer->setSingleShot(true);
 	mReadyStateTimer->setInterval(1000);
@@ -264,13 +287,16 @@ void VeQItemMqttProducer::onConnected()
 
 void VeQItemMqttProducer::onDisconnected()
 {
+	setHeartbeatState(HeartbeatInactive);
 	setConnectionState(Disconnected);
 	if (error() == QMqttClient::NoError
 			&& mMqttConnection
 			&& mMqttConnection->error() != QMqttClient::NoError) {
 		setError(mMqttConnection->error());
 	}
+	mMissedHeartbeats = 0;
 	mKeepAliveTimer->stop();
+	mHeartBeatTimer->stop();
 	mReadyStateTimer->stop();
 	mReceivedMessage = false;
 	if (mMqttSubscription.data()) {
@@ -377,8 +403,14 @@ void VeQItemMqttProducer::onSubscriptionMessageReceived(const QMqttMessage &mess
 	const QString notificationPrefix = QStringLiteral("N/%1").arg(mPortalId);
 	if (topicName.startsWith(notificationPrefix)) {
 		const QString keepaliveTopic = notificationPrefix + QStringLiteral("/keepalive");
+		const QString heartbeatTopic = notificationPrefix + QStringLiteral("/heartbeat");
 		if (topicName.compare(keepaliveTopic, Qt::CaseInsensitive) == 0) {
 			// ignore keepalive topic.
+		} else if (topicName.compare(heartbeatTopic, Qt::CaseInsensitive) == 0) {
+			// (re)start our heartbeat timer.
+			mHeartBeatTimer->start();
+			mMissedHeartbeats = 0;
+			setHeartbeatState(HeartbeatActive);
 		} else {
 			// we have a topic message which we need to expose via VeQItem.
 			const QString path = topicName.mid(notificationPrefix.size() + 1);
@@ -432,6 +464,18 @@ void VeQItemMqttProducer::doKeepAlive(bool suppressRepublish)
 	if (mMqttConnection
 			&& mMqttConnection->state() == QMqttClient::Connected
 			&& !mPortalId.isEmpty()) {
+#ifdef MQTT_WEBSOCKETS_ENABLED
+		// If connected to VRM, it might not forward heartbeats from the device.
+		// With Qt 6.5.2 we can sometimes lose the websocket connection
+		// without that triggering automatic reconnect, and we won't catch
+		// it in the heartbeat timeout handler if we are not receiving heartbeats.
+		// So, handle it here, instead.
+		if (mWebSocket && !mWebSocket->isOpen()) {
+			qWarning() << "Unable to send keepalive due to websocket disconnection";
+			onDisconnected();
+			return;
+		}
+#endif
 		if (mIsVrmBroker || !suppressRepublish) {
 			mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)),
 					QByteArray());
@@ -440,6 +484,19 @@ void VeQItemMqttProducer::doKeepAlive(bool suppressRepublish)
 			mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)),
 					QByteArrayLiteral("{ \"keepalive-options\" : [\"suppress-republish\"] }"));
 		}
+	}
+}
+
+VeQItemMqttProducer::HeartbeatState VeQItemMqttProducer::heartbeatState() const
+{
+	return mHeartbeatState;
+}
+
+void VeQItemMqttProducer::setHeartbeatState(VeQItemMqttProducer::HeartbeatState heartbeatState)
+{
+	if (mHeartbeatState != heartbeatState) {
+		mHeartbeatState = heartbeatState;
+		Q_EMIT heartbeatStateChanged();
 	}
 }
 

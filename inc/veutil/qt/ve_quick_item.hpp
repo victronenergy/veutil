@@ -272,7 +272,7 @@ private:
 	QString mInvalidText = QString::fromUtf8("--");
 
 	static double constexpr mInvalidMin = 0;
-	static double constexpr mInvalidMax = 100.0;
+	static double constexpr mInvalidMax = INT_MAX;
 
 	QVariant convertToDisplay(QVariant const &value);
 	QVariant convertFromDisplay(QVariant const &value);

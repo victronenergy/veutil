@@ -98,7 +98,7 @@ public:
 	 * will free the whole tree. Its only usefull for items which are not part of
 	 * a tree, and that is never the case. So lets deprecate that constructor.
 	 */
-	explicit VeQItem(VeQItemProducer *producer, QObject *parent) __attribute((deprecated));
+	Q_DECL_DEPRECATED explicit VeQItem(VeQItemProducer *producer, QObject *parent);
 	explicit VeQItem(VeQItemProducer *producer);
 	~VeQItem();
 
@@ -417,7 +417,7 @@ class VE_QITEM_EXPORT VeQItemLocal : public VeQItem
 	Q_OBJECT
 
 public:
-	explicit VeQItemLocal(VeQItemProducer *producer, QObject *parent) __attribute((deprecated));
+	Q_DECL_DEPRECATED explicit VeQItemLocal(VeQItemProducer *producer, QObject *parent);
 	explicit VeQItemLocal(VeQItemProducer *producer);
 
 	int setValue(QVariant const &value) override

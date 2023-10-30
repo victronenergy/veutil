@@ -450,7 +450,8 @@ void VeQItemMqttProducer::parseMessage(const QString &path, const QByteArray &me
 		// TODO: text / min / max / default ??
 		const QJsonObject payload = QJsonDocument::fromJson(message).object();
 		const QVariant variant = payload.value(QStringLiteral("value")).toVariant();
-		item->produceValue(variant.isNull() ? QVariant() : variant); // work around QJsonValue always using std::nullptr_t even for literal null values.
+		item->produceValue(variant.isNull() ? QVariant() : variant, // work around QJsonValue always using std::nullptr_t even for literal null values.
+				VeQItem::Synchronized); // ensure the value is marked as "seen".
 		Q_EMIT messageReceived(path, variant);
 	}
 }

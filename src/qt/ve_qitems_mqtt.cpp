@@ -447,12 +447,23 @@ void VeQItemMqttProducer::parseMessage(const QString &path, const QByteArray &me
 		item->produceValue(QVariant(), VeQItem::Offline);
 	} else {
 		// otherwise, update the value in the item.
-		// TODO: text / min / max / default ??
 		const QJsonObject payload = QJsonDocument::fromJson(message).object();
-		const QVariant variant = payload.value(QStringLiteral("value")).toVariant();
-		item->produceValue(variant.isNull() ? QVariant() : variant, // work around QJsonValue always using std::nullptr_t even for literal null values.
+		const QVariant min = payload.value(QStringLiteral("min")).toVariant();
+		if (!min.isNull() && min.isValid()) {
+			item->itemProduceProperty("min", min);
+		}
+		const QVariant max = payload.value(QStringLiteral("max")).toVariant();
+		if (!max.isNull() && max.isValid()) {
+			item->itemProduceProperty("max", max);
+		}
+		const QVariant def = payload.value(QStringLiteral("default")).toVariant();
+		if (!def.isNull() && def.isValid()) {
+			item->itemProduceProperty("default", def);
+		}
+		const QVariant value = payload.value(QStringLiteral("value")).toVariant();
+		item->produceValue(value.isNull() ? QVariant() : value, // work around QJsonValue always using std::nullptr_t even for literal null values.
 				VeQItem::Synchronized); // ensure the value is marked as "seen".
-		Q_EMIT messageReceived(path, variant);
+		Q_EMIT messageReceived(path, value);
 	}
 }
 

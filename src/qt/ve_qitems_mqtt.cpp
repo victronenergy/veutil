@@ -263,7 +263,7 @@ void VeQItemMqttProducer::continueConnect()
 	// deleteLater()'d will have been properly destroyed, to avoid
 	// race condition where we might have two connections active.
 	QMetaObject::invokeMethod(this, [this] {
-		mMqttConnection->setCleanSession(true);
+		mMqttConnection->setCleanSession(false);
 		mMqttConnection->connectToHost();
 	}, Qt::QueuedConnection);
 }
@@ -283,6 +283,21 @@ void VeQItemMqttProducer::onConnected()
 			this, &VeQItemMqttProducer::onSubscriptionMessageReceived, Qt::UniqueConnection);
 		doKeepAlive();
 	}
+
+	// QMqttClient has some internal state which sometimes isn't cleaned up
+	// properly on disconnection.  To allow reconnection, we need to delete
+	// the client, transition back to idle state, and then reconnect.
+	QTimer::singleShot(3000, this, [this] {
+		// If we're still waiting to receive a message from the broker more
+		// than 3 seconds after connecting, assume we are in the stuck state.
+		if (connectionState() == VeQItemMqttProducer::Connected) {
+			qWarning() << "Automatic reconnection failed, trying clean reconnect.";
+			mMqttConnection->deleteLater();
+			mMqttConnection = nullptr;
+			setConnectionState(Idle);
+			open(QHostAddress(mHostName), mPort);
+		}
+	});
 }
 
 void VeQItemMqttProducer::onDisconnected()
@@ -300,6 +315,7 @@ void VeQItemMqttProducer::onDisconnected()
 	mReadyStateTimer->stop();
 	mReceivedMessage = false;
 	if (mMqttSubscription.data()) {
+		mMqttSubscription->unsubscribe();
 		QObject::disconnect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
 			this, &VeQItemMqttProducer::onSubscriptionMessageReceived);
 	}

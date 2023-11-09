@@ -1,4 +1,29 @@
-#include <veutil/qt/wakespeed_error.hpp>
+#include <veutil/qt/alternator_error.hpp>
+
+#include <QCoreApplication>
+#include <QStringList>
+
+class Wakespeed
+{
+	Q_DECLARE_TR_FUNCTIONS(Wakespeed)
+
+public:
+	static QString getDescription(QString errorId);
+
+private:
+	enum class FaultCode;
+
+	Wakespeed() = default;
+};
+
+QString AlternatorError::getDescription(QString errorId)
+{
+	if (errorId == "")
+		return tr("No error");
+	if (errorId.startsWith("wakespeed:", Qt::CaseInsensitive))
+		return Wakespeed::getDescription(errorId);
+	return tr("Unknown error: %1").arg(errorId);
+}
 
 /*
  * From the "Wakespeed Communications and Configurations Guide":
@@ -12,7 +37,7 @@
  * (Note combinations like 10, and 11 are not used. Because one cannot flash
  * out 0's, and kind of hard to tell if 11 is a 1+1, or a real slow 2+0)
  */
-enum FaultCode {
+enum class Wakespeed::FaultCode {
 	FC_NONE							= 0,				// No fault
 
 	// Battery temp exceeded limit
@@ -102,12 +127,18 @@ enum FaultCode {
 	FC_DCDC_MISCOFIG				= 207,
 };
 
-QString WakespeedError::getDescription(int errorNumber)
+QString Wakespeed::getDescription(QString errorId)
 {
-	/* Mask off the failure bit; do note that this is not the same as the 0x8000 as mentioned above */
-	FaultCode faultCode = static_cast<FaultCode>(errorNumber & ~FailureMask);
+	auto parts = errorId.split("-");
+	if (parts.length() < 1)
+		return tr("Unknown error: ") + errorId;
 
-	QString result = "#" + QString::number(faultCode) + " ";
+	bool ok;
+	auto faultCode = parts[1].toUInt(&ok);
+	if (!ok)
+		return tr("Unknown error: ") + errorId;
+
+	auto result = "#" + QString::number(faultCode) + " ";
 
 	if ((faultCode >= 31 && faultCode <= 39) ||
 		(faultCode >= 71 && faultCode <= 79) ||
@@ -116,99 +147,99 @@ QString WakespeedError::getDescription(int errorNumber)
 		return result + tr("Internal error");
 	}
 
-	switch (faultCode) {
-	case FC_NONE:
+	switch (static_cast<FaultCode>(faultCode)) {
+	case FaultCode::FC_NONE:
 		result += tr("No error");
 		break;
-	case FC_LOOP_BAT_TEMP:
+	case FaultCode::FC_LOOP_BAT_TEMP:
 		result += tr("Battery high temperature");
 		break;
-	case FC_LOOP_BAT_VOLTS:
+	case FaultCode::FC_LOOP_BAT_VOLTS:
 		result += tr("Battery high voltage");
 		break;
-	case FC_LOOP_BAT_LOWV:
+	case FaultCode::FC_LOOP_BAT_LOWV:
 		result += tr("Battery low voltage");
 		break;
-	case FC_LOOP_BAT_MAXV:
+	case FaultCode::FC_LOOP_BAT_MAXV:
 		result += tr("Battery voltage exceeded configured max");
 		break;
-	case FC_LOOP_ALT_TEMP:
-	case FC_LOOP_ALT_TEMP_RAMP:
+	case FaultCode::FC_LOOP_ALT_TEMP:
+	case FaultCode::FC_LOOP_ALT_TEMP_RAMP:
 		result += tr("Alternator high temperature");
 		break;
-	case FC_LOOP_ALT_RPMs:
+	case FaultCode::FC_LOOP_ALT_RPMs:
 		result += tr("Alternator high RPM");
 		break;
-	case FC_SYS_FET_TEMP:
+	case FaultCode::FC_SYS_FET_TEMP:
 		result += tr("Field drive FET high temperature");
 		break;
-	case FC_SYS_REQIRED_SENSOR:
+	case FaultCode::FC_SYS_REQIRED_SENSOR:
 		result += tr("Required sensor missing");
 		break;
-	case FC_NO_VALT_VOLTAGE:
+	case FaultCode::FC_NO_VALT_VOLTAGE:
 		result += tr("Alternator low voltage");
 		break;
-	case FC_EXCESSIVE_VALT_OFFSET:
+	case FaultCode::FC_EXCESSIVE_VALT_OFFSET:
 		result += tr("Alternator high voltage offset");
 		break;
-	case FC_LOOP_VALT_MAXV:
+	case FaultCode::FC_LOOP_VALT_MAXV:
 		result += tr("Alternator Voltage exceeded configured max");
 		break;
-	case FC_CAN_BATTERY_DISCONNECTED:
+	case FaultCode::FC_CAN_BATTERY_DISCONNECTED:
 		result += tr("Battery disconnected");
 		break;
-	case FC_CAN_BATTERY_HVL_DISCONNECTED:
+	case FaultCode::FC_CAN_BATTERY_HVL_DISCONNECTED:
 		result += tr("Battery high voltage disconnect");
 		break;
-	case FC_LOG_BATTINST:
+	case FaultCode::FC_LOG_BATTINST:
 		result += tr("Battery instance ouf of range");
 		break;
-	case FC_TOO_MANY_AGGERGATION:
+	case FaultCode::FC_TOO_MANY_AGGERGATION:
 		result += tr("Too many BMS's");
 		break;
-	case FC_CAN_AEBUS_FAULTED:
+	case FaultCode::FC_CAN_AEBUS_FAULTED:
 		result += tr("Battery about to disconnect");
 		break;
-	case FC_TOO_MANY_VEREG_DEVICE:
+	case FaultCode::FC_TOO_MANY_VEREG_DEVICE:
 		result += tr("Too many devices to track");
 		break;
-	case FC_CAN_BATTERY_LVL_DISCONNECTED:
+	case FaultCode::FC_CAN_BATTERY_LVL_DISCONNECTED:
 		result += tr("Battery low voltage disconnect");
 		break;
-	case FC_CAN_BATTERY_HC_DISCONNECTED:
+	case FaultCode::FC_CAN_BATTERY_HC_DISCONNECTED:
 		result += tr("Battery high current disconnect");
 		break;
-	case FC_CAN_BATTERY_HT_DISCONNECTED:
+	case FaultCode::FC_CAN_BATTERY_HT_DISCONNECTED:
 		result += tr("Battery high temperature disconnect");
 		break;
-	case FC_CAN_BATTERY_LT_DISCONNECTED:
+	case FaultCode::FC_CAN_BATTERY_LT_DISCONNECTED:
 		result += tr("Battery low temperature disconnect");
 		break;
-	case FC_CAN_BMS_SYNC_LOST:
-		result += tr ("BMS connection lost");
+	case FaultCode::FC_CAN_BMS_SYNC_LOST:
+		result += tr("BMS connection lost");
 		break;
-	case FC_FORCED_TO_IDLE:
+	case FaultCode::FC_FORCED_TO_IDLE:
 		result += tr("ATC Disabled");
 		break;
-	case FC_DCDC_NOTREADY:
+	case FaultCode::FC_DCDC_NOTREADY:
 		result += tr("DC/DC converter not ready");
 		break;
-	case FC_DCDC_HS_OVP:
+	case FaultCode::FC_DCDC_HS_OVP:
 		result += tr("DC/DC high primary voltage");
 		break;
-	case FC_DCDC_HS_UVP:
+	case FaultCode::FC_DCDC_HS_UVP:
 		result += tr("DC/DC low primary voltage");
 		break;
-	case FC_DCDC_LS_OVP:
+	case FaultCode::FC_DCDC_LS_OVP:
 		result += tr("DC/DC high secondary voltage");
 		break;
-	case FC_DCDC_LS_UVP:
+	case FaultCode::FC_DCDC_LS_UVP:
 		result += tr("DC/DC low secondary voltage");
 		break;
-	case FC_DCDC_OVER_TEMP:
+	case FaultCode::FC_DCDC_OVER_TEMP:
 		result += tr("DC/DC high temperature");
 		break;
-	case FC_DCDC_MISCOFIG:
+	case FaultCode::FC_DCDC_MISCOFIG:
 		result += tr("DC/DC misconfiguration");
 		break;
 	}

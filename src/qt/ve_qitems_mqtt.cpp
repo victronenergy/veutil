@@ -134,7 +134,7 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 		});
 
 	mReadyStateFallbackTimer->setSingleShot(true);
-	mReadyStateFallbackTimer->setInterval(10000);
+	mReadyStateFallbackTimer->setInterval(4000);
 	connect(mReadyStateFallbackTimer, &QTimer::timeout,
 		this, [this] {
 			mReadyStateTimer->stop();

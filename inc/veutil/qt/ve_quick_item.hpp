@@ -38,6 +38,7 @@ class VE_QITEM_EXPORT VeQuickItem : public QObject {
 	Q_PROPERTY(double defaultSourceMin READ getDefaultSourceMin NOTIFY defaultMinChanged)
 	Q_PROPERTY(double defaultSourceMax READ getDefaultSourceMax NOTIFY defaultMaxChanged)
 	Q_PROPERTY(bool isSetting READ getIsSetting NOTIFY isSettingChanged WRITE setIsSetting)
+	Q_PROPERTY(bool isValid READ getIsValid NOTIFY isValidChanged)
 	Q_PROPERTY(bool invalidate READ getInvalidate NOTIFY invalidateChanged WRITE setInvalidate)
 
 public:
@@ -47,6 +48,7 @@ public:
 		mMaxInDisplayUnits(0),
 		mMinInDisplayUnits(0),
 		mIsSetting(isSetting),
+		mIsValid(0),
 		mInvalidate(1)
 	{
 		setUid("");
@@ -147,6 +149,8 @@ public:
 	bool getIsSetting() { return mIsSetting; }
 	void setIsSetting(bool value);
 
+	bool getIsValid() const { return mIsValid; }
+
 signals:
 	void defaultChanged();
 	void minChanged();
@@ -159,6 +163,7 @@ signals:
 	void uidChanged();
 	void valueChanged();
 	void stateChanged();
+	void isValidChanged();
 
 	void unitChanged();
 	void decimalsChanged();
@@ -187,7 +192,11 @@ protected slots:
 	}
 
 	void onValueChanged() {
+		const bool prevIsValid = mIsValid;
+		mIsValid = getValue().isValid();
 		emit valueChanged();
+		if (prevIsValid != mIsValid)
+			emit isValidChanged();
 		if (mTextMode == TextMode::Format)
 			emit textChanged();
 	}
@@ -206,6 +215,7 @@ protected:
 	uint32_t mMaxInDisplayUnits:1;
 	uint32_t mMinInDisplayUnits:1;
 	uint32_t mIsSetting:1;
+	uint32_t mIsValid:1;
 	uint32_t mIsAllocated:1;
 	uint32_t mInvalidate:1;
 

@@ -4,6 +4,8 @@ SOURCES += \
     $$PWD/src/qt/canbus_interfaces.cpp \
     $$PWD/src/qt/charger_error.cpp \
     $$PWD/src/qt/daemontools_service.cpp \
+    $$PWD/src/qt/dbus_service_type.cpp \
+    $$PWD/src/qt/notificationdescriptions.cpp \
     $$PWD/src/qt/vebus_error.cpp \
     $$PWD/src/qt/wakespeed_error.cpp \
 
@@ -16,7 +18,9 @@ HEADERS += \
     $$PWD/inc/veutil/platform/plt.h \
     $$PWD/inc/veutil/qt/canbus_interfaces.hpp \
     $$PWD/inc/veutil/qt/daemontools_service.hpp \
+    $$PWD/inc/veutil/qt/dbus_service_type.h \
     $$PWD/inc/veutil/qt/firmware_updater_data.hpp \
+    $$PWD/inc/veutil/qt/notificationdescriptions.h \
     $$PWD/inc/veutil/qt/vebus_error.hpp \
     $$PWD/inc/veutil/qt/wakespeed_error.hpp \
 

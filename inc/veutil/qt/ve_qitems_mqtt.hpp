@@ -127,7 +127,6 @@ private:
 
 	QTimer *mKeepAliveTimer;
 	QTimer *mHeartBeatTimer;
-	QTimer *mReadyStateTimer;
 	QTimer *mReadyStateFallbackTimer;
 	QMqttClient *mMqttConnection;
 	QPointer<QMqttSubscription> mMqttSubscription;

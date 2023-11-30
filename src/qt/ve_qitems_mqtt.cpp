@@ -69,7 +69,6 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 	: VeQItemProducer(root, id, parent),
 	  mKeepAliveTimer(new QTimer(this)),
 	  mHeartBeatTimer(new QTimer(this)),
-	  mReadyStateTimer(new QTimer(this)),
 	  mReadyStateFallbackTimer(new QTimer(this)),
 	  mMqttConnection(nullptr),
 	  mPort(0),
@@ -123,21 +122,10 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 			}
 		});
 
-	mReadyStateTimer->setSingleShot(true);
-	mReadyStateTimer->setInterval(1000);
-	connect(mReadyStateTimer, &QTimer::timeout,
-		this, [this] {
-			mReadyStateTimer->stop();
-			if (connectionState() == Initializing) {
-				setConnectionState(Ready);
-			}
-		});
-
 	mReadyStateFallbackTimer->setSingleShot(true);
-	mReadyStateFallbackTimer->setInterval(4000);
+	mReadyStateFallbackTimer->setInterval(5000);
 	connect(mReadyStateFallbackTimer, &QTimer::timeout,
 		this, [this] {
-			mReadyStateTimer->stop();
 			if (connectionState() == Initializing) {
 				setConnectionState(Ready);
 			}
@@ -312,7 +300,7 @@ void VeQItemMqttProducer::onDisconnected()
 	mMissedHeartbeats = 0;
 	mKeepAliveTimer->stop();
 	mHeartBeatTimer->stop();
-	mReadyStateTimer->stop();
+	mReadyStateFallbackTimer->stop();
 	mReceivedMessage = false;
 	if (mMqttSubscription.data()) {
 		mMqttSubscription->unsubscribe();
@@ -414,14 +402,30 @@ void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMq
 
 void VeQItemMqttProducer::onSubscriptionMessageReceived(const QMqttMessage &message)
 {
-	const QString topicName(message.topic().name());
+	// Once we have received a message, transition to Initializing state.
+	// Remain in this state while we wait for the flurry of initial messages to end.
+	// The broker should tell us (with "full_publish_completed" topic message) when
+	// we can transition to "Ready" state.
+	if (!mReceivedMessage) {
+		mReceivedMessage = true;
+		setConnectionState(VeQItemMqttProducer::Initializing);
+		// we will transition to Ready state after some time
+		// even if we are still receiving initial messages,
+		// just in case the broker forgets to send us the Ready message.
+		mReadyStateFallbackTimer->start();
+	}
 
+	const QString topicName(message.topic().name());
 	const QString notificationPrefix = QStringLiteral("N/%1").arg(mPortalId);
 	if (topicName.startsWith(notificationPrefix)) {
 		const QString keepaliveTopic = notificationPrefix + QStringLiteral("/keepalive");
 		const QString heartbeatTopic = notificationPrefix + QStringLiteral("/heartbeat");
+		const QString readyTopic = notificationPrefix + QStringLiteral("/full_publish_completed");
 		if (topicName.compare(keepaliveTopic, Qt::CaseInsensitive) == 0) {
 			// ignore keepalive topic.
+		} else if (topicName.compare(readyTopic, Qt::CaseInsensitive) == 0
+				&& connectionState() == VeQItemMqttProducer::Initializing) {
+			setConnectionState(VeQItemMqttProducer::Ready);
 		} else if (topicName.compare(heartbeatTopic, Qt::CaseInsensitive) == 0) {
 			// (re)start our heartbeat timer.
 			mHeartBeatTimer->start();
@@ -432,23 +436,6 @@ void VeQItemMqttProducer::onSubscriptionMessageReceived(const QMqttMessage &mess
 			const QString path = topicName.mid(notificationPrefix.size() + 1);
 			parseMessage(path, message.payload());
 		}
-	}
-
-	// Once we have received a message, transition to Initializing state.
-	// Remain in this state while we wait for the flurry of initial messages to end.
-	if (!mReceivedMessage) {
-		mReceivedMessage = true;
-		setConnectionState(VeQItemMqttProducer::Initializing);
-	}
-	if (connectionState() == VeQItemMqttProducer::Initializing) {
-		// We will receive a flurry of messages upon initial connection.
-		// Once they subside we should transition to Ready state.
-		if (!mReadyStateTimer->isActive()) {
-			// transition to Ready state after 10 seconds
-			// even if we are still receiving initial messages.
-			mReadyStateFallbackTimer->start();
-		}
-		mReadyStateTimer->start(); // restart the timer.
 	}
 }
 

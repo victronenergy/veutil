@@ -1,12 +1,18 @@
 SOURCES += \
     $$PWD/src/plt/exit_on_oom_glibc.c \
+    $$PWD/src/qt/bms_error.cpp \
     $$PWD/src/qt/canbus_interfaces.cpp \
+    $$PWD/src/qt/charger_error.cpp \
     $$PWD/src/qt/daemontools_service.cpp \
     $$PWD/src/qt/vebus_error.cpp \
     $$PWD/src/qt/wakespeed_error.cpp \
 
 HEADERS += \
+    $$PWD/inc/veutil/charger_error.h \
+    $$PWD/inc/veutil/ve_regs_payload.h \
     $$PWD/inc/veutil/base/compiler.h \
+    $$PWD/inc/veutil/qt/bms_error.hpp \
+    $$PWD/inc/veutil/qt/charger_error.hpp \
     $$PWD/inc/veutil/platform/plt.h \
     $$PWD/inc/veutil/qt/canbus_interfaces.hpp \
     $$PWD/inc/veutil/qt/daemontools_service.hpp \

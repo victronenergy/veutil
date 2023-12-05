@@ -31,4 +31,3 @@ private:
 	VeQItem *mService;
 	QMap<unsigned, CanBusProfiles*> mCanInterfaces;
 };
-

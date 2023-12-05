@@ -10,4 +10,3 @@ class VebusError : public QObject
 public:
 	Q_INVOKABLE static QString getDescription(int errorNumber);
 };
-

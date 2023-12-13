@@ -3,12 +3,18 @@
 #include <QAbstractItemModel>
 #include <QModelIndex>
 #include <QVariant>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <qqmlintegration.h>
+#endif
 
 #include <veutil/qt/ve_qitem.hpp>
 
 class VeQItemTreeModel : public QAbstractItemModel
 {
 	Q_OBJECT
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+	QML_ELEMENT
+#endif
 
 public:
 	VeQItemTreeModel(VeQItem *root = 0, QObject *parent = 0);

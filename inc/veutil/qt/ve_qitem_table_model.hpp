@@ -5,7 +5,9 @@
 #include <QModelIndex>
 #include <QStringList>
 #include <QVariant>
-
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <qqmlintegration.h>
+#endif
 #include <veutil/qt/ve_qitem.hpp>
 
 #if defined(QT_QML_LIB)
@@ -20,6 +22,9 @@
 class VeQItemTableModel : public QAbstractItemModel, public QDeclarativeParserStatus
 {
 	Q_OBJECT
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+	QML_ELEMENT
+#endif
 	Q_INTERFACES(QDeclarativeParserStatus)
 	Q_ENUMS(VeQItemTableRoles)
 	Q_ENUMS(Flags)

@@ -18,6 +18,9 @@
 class VeQItemSortTableModel : public QSortFilterProxyModel, public QDeclarativeParserStatus
 {
 	Q_OBJECT
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+	QML_ELEMENT
+#endif
 	Q_INTERFACES(QDeclarativeParserStatus)
 	Q_ENUMS(Flags)
 	Q_PROPERTY(Flags filterFlags READ filterFlags WRITE setFilterFlags NOTIFY filterFlagsChanged)

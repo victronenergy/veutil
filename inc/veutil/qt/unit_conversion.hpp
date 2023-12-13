@@ -4,6 +4,9 @@
 #include <map>
 #include <QString>
 #include <QObject>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <qqmlintegration.h>
+#endif
 
 class UnitConversion;
 
@@ -12,6 +15,9 @@ class UnitConversion;
 
 class Unit : public QObject {
 	Q_OBJECT
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+	QML_ELEMENT
+#endif
 	Q_ENUMS(Type)
 
 public:

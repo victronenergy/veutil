@@ -67,7 +67,7 @@ QString VebusError::getDescription(int errorNumber)
 		result += tr("Internal error");
 		break;
 	case 128:
-		result += tr("Connection prevented by failing relay test");
+		result += tr("Failing relay test prevents connection");
 		break;
 	default:
 		result += tr("VE.Bus error");

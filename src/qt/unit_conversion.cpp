@@ -119,7 +119,7 @@ TemperatureConverter::TemperatureConverter() :
 VolumeConverter::VolumeConverter() :
 	UnitConverter(Unit::CubicMeter, {
 		{ Unit::CubicMeter, new UnitBase("m<sup>3</sup>") },
-		{ Unit::Litre, new UnitLinear("L", 1.0 / 1000.0) },
+		{ Unit::Litre, new UnitLinear("L", 1.0 * 1000.0) },
 		{ Unit::ImperialGallon, new UnitLinear("gall", 219.969157) },
 		{ Unit::UsGallon, new UnitLinear("gall", 264.172052) },
 	}) {}

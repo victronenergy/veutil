@@ -4,6 +4,7 @@
 #include <QHash>
 #include <QModelIndex>
 #include <QStringList>
+#include <QtQmlIntegration>
 #include <QVariant>
 
 #include <veutil/qt/ve_qitem.hpp>
@@ -20,6 +21,7 @@
 class VeQItemTableModel : public QAbstractItemModel, public QDeclarativeParserStatus
 {
 	Q_OBJECT
+	QML_ELEMENT
 	Q_INTERFACES(QDeclarativeParserStatus)
 	Q_ENUMS(VeQItemTableRoles)
 	Q_ENUMS(Flags)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QtGlobal>
+#include <QtQmlIntegration>
 
 #ifdef QT_QML_LIB
 #include <QQmlComponent>
@@ -17,6 +18,7 @@
 class VeQItemSortDelegate : public  QDeclarativeItem
 {
 	Q_OBJECT
+	QML_ELEMENT
 	Q_PROPERTY(QVariant sortValue READ sortValue WRITE setValue NOTIFY valueChanged)
 
 public:
@@ -38,6 +40,7 @@ private:
 class VeQItemChildModel : public VeQItemTableModel
 {
 	Q_OBJECT
+	QML_ELEMENT
 	Q_PROPERTY(QAbstractItemModel *model READ sourceModel WRITE setSourceModel NOTIFY sourceModelChanged)
 	Q_PROPERTY(QString childId READ childId WRITE setChildId NOTIFY childIdChanged)
 	Q_PROPERTY(QDeclarativeComponent *sortDelegate READ sortDelegate WRITE setSortDelegate NOTIFY sortDelegateChanged)

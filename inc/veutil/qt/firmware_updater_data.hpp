@@ -1,11 +1,14 @@
 #pragma once
 
 #include <QObject>
+#include <QtQmlIntegration>
 
 class FirmwareUpdaterData :
 		public QObject
 {
 	Q_OBJECT
+	QML_NAMED_ELEMENT(FirmwareUpdater)
+	QML_UNCREATABLE("")
 	Q_ENUMS(FirmwareType)
 	Q_ENUMS(ImageType)
 	Q_ENUMS(UpdaterState)

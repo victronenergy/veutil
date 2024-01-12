@@ -12,11 +12,14 @@
 
 #include <cstdint>
 
+#include <QtQmlIntegration>
+
 #include <veutil/qt/ve_qitem.hpp>
 #include <veutil/qt/unit_conversion.hpp>
 
 class VE_QITEM_EXPORT VeQuickItem : public QObject {
 	Q_OBJECT
+	QML_ELEMENT
 	Q_PROPERTY(QVariant defaultValue READ getDefault NOTIFY defaultChanged)
 	Q_PROPERTY(double min READ getMin NOTIFY minChanged WRITE setMin)
 	Q_PROPERTY(double max READ getMax NOTIFY maxChanged WRITE setMax)

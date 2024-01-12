@@ -3,6 +3,7 @@
 #include <QFlags>
 #include <QSortFilterProxyModel>
 #include <QStringList>
+#include <QtQmlIntegration>
 
 #include <veutil/qt/ve_qitem_table_model.hpp>
 
@@ -18,6 +19,7 @@
 class VeQItemSortTableModel : public QSortFilterProxyModel, public QDeclarativeParserStatus
 {
 	Q_OBJECT
+	QML_ELEMENT
 	Q_INTERFACES(QDeclarativeParserStatus)
 	Q_ENUMS(Flags)
 	Q_PROPERTY(Flags filterFlags READ filterFlags WRITE setFilterFlags NOTIFY filterFlagsChanged)

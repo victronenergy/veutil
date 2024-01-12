@@ -7,6 +7,7 @@
 #include <QList>
 #include <QObject>
 #include <QString>
+#include <QtQmlIntegration>
 #include <QVariant>
 
 #ifdef CFG_VE_QITEM_EXPORT
@@ -126,6 +127,8 @@ private:
 class VE_QITEM_EXPORT VeQItem : public QObject
 {
 	Q_OBJECT
+    QML_NAMED_ELEMENT(VeQItem)
+    QML_UNCREATABLE("Not creatable, use VeQuickItem instead")
 	Q_ENUMS(State)
 	Q_PROPERTY(QVariant value READ getValue NOTIFY valueChanged WRITE setValue)
 	Q_PROPERTY(QVariant lastValidValue READ getLastValidValue NOTIFY valueChanged)

@@ -1,11 +1,17 @@
 #pragma once
 
 #include <QObject>
-
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <qqmlintegration.h>
+#endif
 class FirmwareUpdaterData :
 		public QObject
 {
 	Q_OBJECT
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	QML_NAMED_ELEMENT(FirmwareUpdater)
+	QML_UNCREATABLE("")
+#endif
 	Q_ENUMS(FirmwareType)
 	Q_ENUMS(ImageType)
 	Q_ENUMS(UpdaterState)

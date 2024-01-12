@@ -10,6 +10,9 @@
 class VeQItemSortDelegate : public QQuickItem
 {
 	Q_OBJECT
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	QML_ELEMENT
+#endif
 	Q_PROPERTY(QVariant sortValue READ sortValue WRITE setValue NOTIFY valueChanged)
 
 public:
@@ -31,6 +34,9 @@ private:
 class VeQItemChildModel : public VeQItemTableModel
 {
 	Q_OBJECT
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	QML_ELEMENT
+#endif
 	Q_PROPERTY(QAbstractItemModel *model READ sourceModel WRITE setSourceModel NOTIFY sourceModelChanged)
 	Q_PROPERTY(QString childId READ childId WRITE setChildId NOTIFY childIdChanged)
 	Q_PROPERTY(QQmlComponent *sortDelegate READ sortDelegate WRITE setSortDelegate NOTIFY sortDelegateChanged)

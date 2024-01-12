@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtGlobal>
+
 #ifdef CFG_VE_QITEM_EXPORT
 # if CFG_VE_QITEM_EXPORT
 #  define VE_QITEM_EXPORT Q_DECL_EXPORT
@@ -11,12 +13,18 @@
 #endif
 
 #include <cstdint>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <qqmlintegration.h>
+#endif
 
 #include <veutil/qt/ve_qitem.hpp>
 #include <veutil/qt/unit_conversion.hpp>
 
 class VE_QITEM_EXPORT VeQuickItem : public QObject {
 	Q_OBJECT
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	QML_ELEMENT
+#endif
 	Q_PROPERTY(QVariant defaultValue READ getDefault NOTIFY defaultChanged)
 	Q_PROPERTY(double min READ getMin NOTIFY minChanged WRITE setMin)
 	Q_PROPERTY(double max READ getMax NOTIFY maxChanged WRITE setMax)

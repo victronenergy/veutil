@@ -90,6 +90,9 @@ QString BmsError::getDescription(int errorNumber)
 	case VE_VDATA_BMS_ERROR_PRE_CHARGE_TIMEOUT:
 		result += tr("Pre charge timeout");
 		break;
+	case VE_VDATA_BMS_ERROR_ATC_ATD_FAILURE:
+		result += tr("ATC/ATD failure");
+		break;
 	}
 
 	return result;

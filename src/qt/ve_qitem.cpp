@@ -355,6 +355,10 @@ VeQItem *VeQItem::itemGetOrCreate(QString uid, bool isLeaf, bool isTrusted)
 		if (child == 0)
 			child = item->createChild(part, isLeaf && n == parts.count(), isTrusted);
 		item = child;
+		if (!isTrusted && item == nullptr) {
+			qWarning() << "UID" << uid << "contains invalid part:" << part;
+			break;
+		}
 		n++;
 	}
 	return item;

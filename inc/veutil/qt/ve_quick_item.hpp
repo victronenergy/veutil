@@ -75,7 +75,7 @@ public:
 	};
 
 	QVariant getDefault() {
-		if (!mIsSetting)
+		if (!mItem || !mIsSetting)
 			return QVariant();
 		return convertToDisplay(mItem->itemProperty("defaultValue"));
 	}
@@ -98,7 +98,7 @@ public:
 		return getDefaultSourceMax();
 	}
 	double getDefaultSourceMax() {
-		if (!mIsSetting)
+		if (!mItem || !mIsSetting)
 			return mInvalidMax;
 		QVariant max = mItem->itemProperty("max");
 		return max.isValid() ? max.toDouble() : mInvalidMax;
@@ -110,6 +110,8 @@ public:
 		return getDefaultMin();
 	}
 	double getDefaultMin() {
+		if (!mItem)
+			return mInvalidMin;
 		QVariant min = convertToDisplay(mItem->itemProperty("min"));
 		return min.isValid() ? min.toDouble() : mInvalidMin;
 	}
@@ -122,7 +124,7 @@ public:
 		return getDefaultSourceMax();
 	}
 	double getDefaultSourceMin() {
-		if (!mIsSetting)
+		if (!mItem || !mIsSetting)
 			return mInvalidMin;
 		QVariant max = mItem->itemProperty("min");
 		return max.isValid() ? max.toDouble() : mInvalidMin;
@@ -130,12 +132,12 @@ public:
 
 	Q_INVOKABLE QString getText(bool force = false);
 	void setText(const QString &text);
-	QString getUid() { return mItem->uniqueId(); }
+	QString getUid() { return mItem ? mItem->uniqueId() : QString(); }
 	void setUid(QString uid);
 	Q_INVOKABLE QVariant getValue(bool force = false);
-	QVariant getSourceValue() { return mItem->getValue(); }
-	VeQItem::State getState() { return mItem->getState(); }
-	bool getSeen() { return mItem->getSeen(); }
+	QVariant getSourceValue() { return mItem ? mItem->getValue() : QVariant(); }
+	VeQItem::State getState() { return mItem ? mItem->getState() : VeQItem::Idle; }
+	bool getSeen() { return mItem ? mItem->getSeen() : false; }
 	Q_INVOKABLE int setValue(QVariant const &value);
 	void setValueProperty(QVariant value);
 	void setSourceValueProperty(QVariant const &value);
@@ -236,6 +238,9 @@ protected:
 private:
 	void setup()
 	{
+		if (!mItem)
+			return;
+
 		mItem->getValueAndChanges(this, &VeQuickItem::onValueChanged);
 
 		connect(mItem, &VeQItem::stateChanged, this, &VeQuickItem::stateChanged);

@@ -36,6 +36,9 @@ void VeQuickItem::setSourceMin(const double &min)
 
 QString VeQuickItem::getText(bool force)
 {
+	if (!mItem)
+		return QString();
+
 	switch (mTextMode) {
 	case TextMode::FromItem: {
 		QString text = mInvalidate ? mItem->getText(force) : mItem->getLastValidText();
@@ -98,12 +101,17 @@ void VeQuickItem::setUid(QString uid)
 
 QVariant VeQuickItem::getValue(bool force)
 {
+	if (!mItem)
+		return QVariant();
 	QVariant value = mInvalidate ? mItem->getValue(force) : mItem->getLastValidValue();
 	return convertToDisplay(value);
 }
 
 int VeQuickItem::setValue(const QVariant &value)
 {
+	if (!mItem)
+		return 0;
+
 	QVariant newValue = convertFromDisplay(value);
 
 	// Since javascript isn't typed, it uses "number" for all of numeric ones,
@@ -212,6 +220,9 @@ void VeQuickItem::setValueProperty(QVariant value)
 
 void VeQuickItem::setSourceValueProperty(const QVariant &value)
 {
+	if (!mItem)
+		return;
+
 	if (mItem->uniqueId() != "") {
 		qDebug() << "ignoring request to set value on bound qml Item, please use setValue instead";
 		return;
@@ -287,7 +298,7 @@ void VeQuickItem::setSourceUnit(Unit::Type unit)
 
 void VeQuickItem::setDisplayUnit(Unit::Type unit)
 {
-	if (mDisplayUnit == unit)
+	if (mDisplayUnit == unit || !mItem)
 		return;
 
 	DisplayUnitValues prevValues;

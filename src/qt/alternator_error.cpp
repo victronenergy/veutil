@@ -49,6 +49,8 @@ enum class Wakespeed::FaultCode {
 	FC_LOOP_BAT_LOWV				= 14 /*+ 0x8000*/,
 	// Voltage at Vbat+ exceeded Max Bat Volts as defined by $CPB:
 	FC_LOOP_BAT_MAXV				= 15,
+	// Battery Temperature is shorted (Defective)
+	FC_LOOP_SHORTED_BAT_TEMP		= 16,
 
 	// Alternator temp exceeded limit
 	FC_LOOP_ALT_TEMP				= 21,
@@ -70,6 +72,8 @@ enum class Wakespeed::FaultCode {
 	FC_EXCESSIVE_VALT_OFFSET		= 44,
 	// Voltage at VAlt+ exceeded Max Bat Volts as defined by $CPB:
 	FC_LOOP_VALT_MAXV				= 45,
+	// Voltage greatly exceeded expected upper limit battery limit as measured at VAlt+
+	FC_LOOP_ALT_HIGHV				= 46,
 
 	// a CAN has been received that the battery charging bus has been disconnected.
 	FC_CAN_BATTERY_DISCONNECTED		= 51,
@@ -163,6 +167,9 @@ QString Wakespeed::getDescription(QString errorId)
 	case FaultCode::FC_LOOP_BAT_MAXV:
 		result += tr("Battery voltage exceeded configured max");
 		break;
+	case FaultCode::FC_LOOP_SHORTED_BAT_TEMP:
+		result += tr("Battery temperature shorted");
+		break;
 	case FaultCode::FC_LOOP_ALT_TEMP:
 	case FaultCode::FC_LOOP_ALT_TEMP_RAMP:
 		result += tr("Alternator high temperature");
@@ -184,6 +191,9 @@ QString Wakespeed::getDescription(QString errorId)
 		break;
 	case FaultCode::FC_LOOP_VALT_MAXV:
 		result += tr("Alternator Voltage exceeded configured max");
+		break;
+	case FaultCode::FC_LOOP_ALT_HIGHV:
+		result += tr("Alternator high voltage");
 		break;
 	case FaultCode::FC_CAN_BATTERY_DISCONNECTED:
 		result += tr("Battery disconnected");

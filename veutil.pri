@@ -5,6 +5,7 @@ SOURCES += \
     $$PWD/src/qt/charger_error.cpp \
     $$PWD/src/qt/daemontools_service.cpp \
     $$PWD/src/qt/vebus_error.cpp \
+    $$PWD/src/qt/venus_types.cpp \
     $$PWD/src/qt/wakespeed_error.cpp \
 
 HEADERS += \
@@ -17,6 +18,7 @@ HEADERS += \
     $$PWD/inc/veutil/qt/daemontools_service.hpp \
     $$PWD/inc/veutil/qt/firmware_updater_data.hpp \
     $$PWD/inc/veutil/qt/vebus_error.hpp \
+    $$PWD/inc/veutil/qt/venus_types.hpp \
     $$PWD/inc/veutil/qt/wakespeed_error.hpp \
     $$PWD/inc/veutil/ve_regs_payload.h \
 

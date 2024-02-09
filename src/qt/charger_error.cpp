@@ -90,6 +90,13 @@ const VeChargerError ChargerError::errors[] =
 	{ CHARGER_ERROR_INPUT_SHUTDOWN_FAST_OVERVOLT,			QT_TR_NOOP("PV Input shutdown") },
 	{ CHARGER_ERROR_INPUT_SHUTDOWN_HIGH_OVERVOLT,			QT_TR_NOOP("PV Input shutdown") },
 	{ CHARGER_ERROR_INPUT_SHUTDOWN_OFF_CURRENT,				QT_TR_NOOP("PV Input shutdown") },
+	
+	{ CHARGER_ERROR_BATTERY_TEMP_TOO_HIGH_WARN,				QT_TR_NOOP("Battery high temperature") },
+	{ CHARGER_ERROR_BATTERY_TEMP_TOO_LOW_WARN,				QT_TR_NOOP("Battery temperature too low") },
+
+	{ CHARGER_ERROR_CHARGER_TEMP_TOO_HIGH_WARN,				QT_TR_NOOP("Charger high temperature") },
+	{ CHARGER_ERROR_CHARGER_SHORT_CIRCUIT_WARN,				QT_TR_NOOP("Charger short circuit") },
+	{ CHARGER_ERROR_CHARGER_CONVERTER_ISSUE_WARN,			QT_TR_NOOP("Charger power stage issue") },
 };
 
 ChargerError::ChargerError()
@@ -112,5 +119,10 @@ bool ChargerError::isWarning(int error)
 {
 	return error == CHARGER_ERROR_LINK_DEVICE_MISSING ||
 		error == CHARGER_ERROR_LINK_CONFIGURATION ||
-		error == CHARGER_ERROR_BATTERY_TEMP_TOO_LOW;
+		error == CHARGER_ERROR_BATTERY_TEMP_TOO_LOW ||
+		error == CHARGER_ERROR_BATTERY_TEMP_TOO_HIGH_WARN ||
+		error == CHARGER_ERROR_BATTERY_TEMP_TOO_LOW_WARN ||
+		error == CHARGER_ERROR_CHARGER_TEMP_TOO_HIGH_WARN ||
+		error == CHARGER_ERROR_CHARGER_SHORT_CIRCUIT_WARN ||
+		error == CHARGER_ERROR_CHARGER_CONVERTER_ISSUE_WARN;
 }

@@ -44,8 +44,8 @@ const VeChargerError ChargerError::errors[] =
 	{ CHARGER_ERROR_INPUT_SHUTDOWN_RETRY,					QT_TR_NOOP("Input shutdown (retry)") },
 	{ CHARGER_ERROR_INTERNAL_FAILURE,						QT_TR_NOOP("Input internal failure") },
 
-	{ CHARGER_ERROR_PVRISO_FAULT,							QT_TR_NOOP("Panel isolation failure") },
-	{ CHARGER_ERROR_GFCI_FAULT,								QT_TR_NOOP("Ground fault detected") },
+	{ CHARGER_ERROR_PVRISO_FAULT,							QT_TR_NOOP("PV isolation failure") },
+	{ CHARGER_ERROR_GFCI_FAULT,								QT_TR_NOOP("PV isolation failure") },
 	{ CHARGER_ERROR_GROUND_RELAY_FAULT,						QT_TR_NOOP("Ground fault detected") },
 
 	{ CHARGER_ERROR_INVERTER_OVERLOAD,						QT_TR_NOOP("Inverter overload") },
@@ -64,6 +64,12 @@ const VeChargerError ChargerError::errors[] =
 	{ CHARGER_ERROR_LINK_CONFIGURATION,						QT_TR_NOOP("Incompatible device") },
 	{ CHARGER_ERROR_LINK_BMS_MISSING,						QT_TR_NOOP("BMS connection lost") },
 	{ CHARGER_ERROR_LINK_CONFIG_MISMATCH,					QT_TR_NOOP("Network misconfigured") },
+	{ CHARGER_ERROR_LINK_SETTINGS_ISSUE,					QT_TR_NOOP("Network misconfigured") },
+	{ CHARGER_ERROR_LINK_DEVICE_NOT_CAPABLE,				QT_TR_NOOP("Network misconfigured") },
+	{ CHARGER_ERROR_LINK_PROTOCOL_VERSION,					QT_TR_NOOP("Network misconfigured") },
+	{ CHARGER_ERROR_LINK_PHASE_ROTATION,					QT_TR_NOOP("Phase rotation") },
+	{ CHARGER_ERROR_LINK_MULTIPLE_AC_INPUTS,				QT_TR_NOOP("Multiple AC inputs") },
+	{ CHARGER_ERROR_LINK_PHASE_OVERLOAD,					QT_TR_NOOP("Phase overload") },
 
 	{ CHARGER_ERROR_MEMORY_WRITE_FAILURE,					QT_TR_NOOP("Memory write error") },
 	{ CHARGER_ERROR_CPU_TEMP_TOO_HIGH,						QT_TR_NOOP("CPU temperature too high") },
@@ -75,8 +81,11 @@ const VeChargerError ChargerError::errors[] =
 	{ CHARGER_ERROR_REFERENCE_VOLTAGE_FAILURE,				QT_TR_NOOP("Reference voltage failed") },
 	{ CHARGER_ERROR_TESTER_FAIL,							QT_TR_NOOP("Tester fail") },
 	{ CHARGER_ERROR_HISTORY_DATA_INVALID,					QT_TR_NOOP("History invalid") },
+	{ CHARGER_ERROR_KWH_COUNTERS_INVALID,					QT_TR_NOOP("kWh counters invalid") },
 
 	{ CHARGER_ERROR_INTERNAL_UNDERVOLTAGE_HV,				QT_TR_NOOP("DC voltage error") },
+	{ CHARGER_ERROR_INTERNAL_DCDC_FAILURE,					QT_TR_NOOP("DC voltage error") },
+	{ CHARGER_ERROR_INTERNAL_GFCI_FAILURE,					QT_TR_NOOP("GFCI sensor error") },
 	{ CHARGER_ERROR_INTERNAL_UNDERVOLTAGE_3V3,				QT_TR_NOOP("3V3 supply error") },
 	{ CHARGER_ERROR_INTERNAL_UNDERVOLTAGE_5V,				QT_TR_NOOP("5V supply error") },
 	{ CHARGER_ERROR_INTERNAL_UNDERVOLTAGE_12V,				QT_TR_NOOP("12V supply error") },
@@ -90,7 +99,7 @@ const VeChargerError ChargerError::errors[] =
 	{ CHARGER_ERROR_INPUT_SHUTDOWN_FAST_OVERVOLT,			QT_TR_NOOP("PV Input shutdown") },
 	{ CHARGER_ERROR_INPUT_SHUTDOWN_HIGH_OVERVOLT,			QT_TR_NOOP("PV Input shutdown") },
 	{ CHARGER_ERROR_INPUT_SHUTDOWN_OFF_CURRENT,				QT_TR_NOOP("PV Input shutdown") },
-	
+
 	{ CHARGER_ERROR_BATTERY_TEMP_TOO_HIGH_WARN,				QT_TR_NOOP("Battery high temperature") },
 	{ CHARGER_ERROR_BATTERY_TEMP_TOO_LOW_WARN,				QT_TR_NOOP("Battery temperature too low") },
 

@@ -93,6 +93,14 @@ QString BmsError::getDescription(int errorNumber)
 	case VE_VDATA_BMS_ERROR_ATC_ATD_FAILURE:
 		result += tr("ATC/ATD failure");
 		break;
+	case VE_VDATA_BMS_ERROR_CALIBRATION_DATA_LOST:
+	case VE_VDATA_BMS_ERROR_CALIBRATION_DATA_LOST_OLD:
+		result += tr("Calibration data lost");
+		break;
+	case VE_VDATA_BMS_ERROR_SETTINGS_DATA_INVALID:
+	case VE_VDATA_BMS_ERROR_SETTINGS_DATA_INVALID_OLD:
+		result += tr("Settings invalid");
+		break;
 	}
 
 	return result;

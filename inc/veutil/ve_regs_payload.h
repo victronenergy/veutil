@@ -37,12 +37,56 @@
 #define VE_VDATA_BMS_ERROR_RESERVED_27				27
 #define VE_VDATA_BMS_ERROR_SLAVE_UPDATE				28
 #define VE_VDATA_BMS_ERROR_SLAVE_UPDATE_UNAVAILABLE	29
-#define VE_VDATA_BMS_ERROR_CALIBRATION_DATA_LOST	30 // Non-volatile calibration data lost
-#define VE_VDATA_BMS_ERROR_SETTINGS_DATA_INVALID	31 // Non-volatile settings data invalid/corrupted
+#define VE_VDATA_BMS_ERROR_CALIBRATION_DATA_LOST_OLD	30 // Deprecated; use #116 instead
+#define VE_VDATA_BMS_ERROR_SETTINGS_DATA_INVALID_OLD	31 // Deprecated; use #119 instead
 #define VE_VDATA_BMS_ERROR_BMS_CABLE				32 // BMS cable error
 #define VE_VDATA_BMS_ERROR_REF_VOLTAGE_FAILURE		33 // Reference voltage failure
 #define VE_VDATA_BMS_ERROR_WRONG_SYSTEM_VOLTAGE		34
 #define VE_VDATA_BMS_ERROR_PRE_CHARGE_TIMEOUT		35
 #define VE_VDATA_BMS_ERROR_ATC_ATD_FAILURE			36
+#define VE_VDATA_BMS_ERROR_INTERLOCK				37 // Use by MGE
+#define VE_VDATA_BMS_ERROR_EMERGENCY_STOP			38 // Use by MGE
+#define VE_VDATA_BMS_ERROR_COMMUNICATION_TIMEOUT	39 // Use by MGE
+#define VE_VDATA_BMS_ERROR_SAFETY_LOCK				40 // Use by MGE
+#define VE_VDATA_BMS_ERROR_TERMINAL_OVER_TEMPERATURE	41 // Use by MGE
+#define VE_VDATA_BMS_ERROR_RESERVED_101				101 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_102				102 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_103				103 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_104				104 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_105				105 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_106				106 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_107				107 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_108				108 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_109				109 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_110				110 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_111				111 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_112				112 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_113				113 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_CALIBRATION_DATA_LOST	116 // Non-volatile calibration data lost (same as charger error)
+#define VE_VDATA_BMS_ERROR_SETTINGS_DATA_INVALID	119 // Non-volatile settings data invalid/corrupted (same as charger error)
+#define VE_VDATA_BMS_ERROR_RESERVED_201				201 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_202				202 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_203				203 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_204				204 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_205				205 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_206				206 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_207				207 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_208				208 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_209				209 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_210				210 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_211				211 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_212				212 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_213				213 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_214				214 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_215				215 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_216				216 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_217				217 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_218				218 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_219				219 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_220				220 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_221				221 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_222				222 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_223				223 // Do not use; taken by Lynx Smart BMS
+#define VE_VDATA_BMS_ERROR_RESERVED_224				224 // Do not use; taken by Lynx Smart BMS
 
 /* NOTE: DO NOT DEFINE NEW CONSTANTS IN THIS FILE! THIS FILE IS A COPY! */

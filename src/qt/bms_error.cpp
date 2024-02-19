@@ -101,6 +101,21 @@ QString BmsError::getDescription(int errorNumber)
 	case VE_VDATA_BMS_ERROR_SETTINGS_DATA_INVALID_OLD:
 		result += tr("Settings invalid");
 		break;
+	case VE_VDATA_BMS_ERROR_INTERLOCK:
+		result += tr("Interlock");
+		break;
+	case VE_VDATA_BMS_ERROR_EMERGENCY_STOP:
+		result += tr("Emergengy stop");
+		break;
+	case VE_VDATA_BMS_ERROR_COMMUNICATION_TIMEOUT:
+		result += tr("Communication timeout");
+		break;
+	case VE_VDATA_BMS_ERROR_SAFETY_LOCK:
+		result += tr("Safety lock");
+		break;
+	case VE_VDATA_BMS_ERROR_TERMINAL_OVER_TEMPERATURE:
+		result += tr("Terminal over temperature");
+		break;
 	}
 
 	return result;

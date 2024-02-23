@@ -183,14 +183,21 @@ void VeQItemMqttProducer::open(
 		mWebSocket->setProtocol(
 			  protocolVersion == QMqttClient::MQTT_3_1 ? "mqttv3.1" : "mqtt");
 
+		connect(mWebSocket, &WebSocketDevice::disconnected,
+			this, [this] {
+				onStateChanged(QMqttClient::Disconnected);
+			}, Qt::QueuedConnection);
+
 		connect(mWebSocket, &WebSocketDevice::connected,
 			this, [this, protocolVersion] {
 				mMqttConnection->setProtocolVersion(protocolVersion);
 				mMqttConnection->setTransport(mWebSocket, QMqttClient::IODevice);
 				QMetaObject::invokeMethod(this, [this] { Q_EMIT aboutToConnect(); }, Qt::QueuedConnection);
-			});
+			}, Qt::QueuedConnection);
 
-		setConnectionState(Connecting);
+		if (connectionState() != Reconnecting) {
+			setConnectionState(Connecting);
+		}
 		mWebSocket->open(QIODeviceBase::ReadWrite);
 	}, Qt::QueuedConnection);
 }
@@ -230,7 +237,9 @@ void VeQItemMqttProducer::open(const QHostAddress &host, int port)
 			this, &VeQItemMqttProducer::onMessageReceived);
 
 		QMetaObject::invokeMethod(this, [this] { Q_EMIT aboutToConnect(); }, Qt::QueuedConnection);
-		setConnectionState(Connecting);
+		if (connectionState() != Reconnecting) {
+			setConnectionState(Connecting);
+		}
 	}, Qt::QueuedConnection);
 }
 
@@ -283,7 +292,15 @@ void VeQItemMqttProducer::onConnected()
 			mMqttConnection->deleteLater();
 			mMqttConnection = nullptr;
 			setConnectionState(Idle);
+#ifdef MQTT_WEBSOCKETS_ENABLED
+			if (mHostName.isEmpty()) {
+				open(mUrl, mProtocolVersion);
+			} else {
+				open(QHostAddress(mHostName), mPort);
+			}
+#else
 			open(QHostAddress(mHostName), mPort);
+#endif
 		}
 	});
 }
@@ -589,14 +606,22 @@ bool VeQItemMqttProducer::requestValue(const QString &uid)
 WebSocketDevice::WebSocketDevice(QObject *parent)
 	: QIODevice(parent)
 {
+	connect(&mWebSocket, &QWebSocket::stateChanged,
+		this, [this] {
+			if (mWebSocket.state() == QAbstractSocket::ClosingState) {
+				if (isOpen()) {
+					QIODevice::close();
+				}
+			} else if (mWebSocket.state() == QAbstractSocket::UnconnectedState) {
+				Q_EMIT disconnected();
+			}
+		});
 	connect(&mWebSocket, &QWebSocket::connected,
 		this, &WebSocketDevice::connected);
 	connect(&mWebSocket, &QWebSocket::disconnected,
 		this, &WebSocketDevice::disconnected);
 	connect(&mWebSocket, &QWebSocket::binaryMessageReceived,
 		this, &WebSocketDevice::onBinaryMessageReceived);
-	connect(this, &WebSocketDevice::disconnected,
-		this, [this] { close(); });
 }
 
 void WebSocketDevice::setUrl(const QUrl &url)
@@ -642,7 +667,8 @@ bool WebSocketDevice::open(QIODeviceBase::OpenMode mode)
 
 void WebSocketDevice::close()
 {
-	mWebSocket.close();
+	if (mWebSocket.isValid())
+		mWebSocket.close();
 	QIODevice::close();
 }
 

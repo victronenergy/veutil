@@ -105,7 +105,7 @@ QString BmsError::getDescription(int errorNumber)
 		result += tr("Interlock");
 		break;
 	case VE_VDATA_BMS_ERROR_EMERGENCY_STOP:
-		result += tr("Emergengy stop");
+		result += tr("Emergency stop");
 		break;
 	case VE_VDATA_BMS_ERROR_COMMUNICATION_TIMEOUT:
 		result += tr("Communication timeout");

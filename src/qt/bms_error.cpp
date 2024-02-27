@@ -90,6 +90,32 @@ QString BmsError::getDescription(int errorNumber)
 	case VE_VDATA_BMS_ERROR_PRE_CHARGE_TIMEOUT:
 		result += tr("Pre charge timeout");
 		break;
+	case VE_VDATA_BMS_ERROR_ATC_ATD_FAILURE:
+		result += tr("ATC/ATD failure");
+		break;
+	case VE_VDATA_BMS_ERROR_CALIBRATION_DATA_LOST:
+	case VE_VDATA_BMS_ERROR_CALIBRATION_DATA_LOST_OLD:
+		result += tr("Calibration data lost");
+		break;
+	case VE_VDATA_BMS_ERROR_SETTINGS_DATA_INVALID:
+	case VE_VDATA_BMS_ERROR_SETTINGS_DATA_INVALID_OLD:
+		result += tr("Settings invalid");
+		break;
+	case VE_VDATA_BMS_ERROR_INTERLOCK:
+		result += tr("Interlock");
+		break;
+	case VE_VDATA_BMS_ERROR_EMERGENCY_STOP:
+		result += tr("Emergency stop");
+		break;
+	case VE_VDATA_BMS_ERROR_COMMUNICATION_TIMEOUT:
+		result += tr("Communication timeout");
+		break;
+	case VE_VDATA_BMS_ERROR_SAFETY_LOCK:
+		result += tr("Safety lock");
+		break;
+	case VE_VDATA_BMS_ERROR_TERMINAL_OVER_TEMPERATURE:
+		result += tr("Terminal over temperature");
+		break;
 	}
 
 	return result;

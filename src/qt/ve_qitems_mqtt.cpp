@@ -292,15 +292,19 @@ void VeQItemMqttProducer::onConnected()
 			mMqttConnection->deleteLater();
 			mMqttConnection = nullptr;
 			setConnectionState(Idle);
+			// Immediately reopening the connection can fail.
+			// Allow asynchronous cleanup to complete before reconnecting.
+			QTimer::singleShot(1000, this, [this] {
 #ifdef MQTT_WEBSOCKETS_ENABLED
-			if (mHostName.isEmpty()) {
-				open(mUrl, mProtocolVersion);
-			} else {
-				open(QHostAddress(mHostName), mPort);
-			}
+				if (mHostName.isEmpty()) {
+					open(mUrl, mProtocolVersion);
+				} else {
+					open(QHostAddress(mHostName), mPort);
+				}
 #else
-			open(QHostAddress(mHostName), mPort);
+				open(QHostAddress(mHostName), mPort);
 #endif
+			});
 		}
 	});
 }

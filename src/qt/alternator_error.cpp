@@ -168,7 +168,7 @@ QString Wakespeed::getDescription(QString errorId)
 		result += tr("Battery voltage exceeded configured max");
 		break;
 	case FaultCode::FC_LOOP_SHORTED_BAT_TEMP:
-		result += tr("Battery temperature shorted");
+		result += tr("Battery temperature sensor defective");
 		break;
 	case FaultCode::FC_LOOP_ALT_TEMP:
 	case FaultCode::FC_LOOP_ALT_TEMP_RAMP:

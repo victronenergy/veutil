@@ -42,6 +42,9 @@ VenusServiceType venusServiceType(const QString &serviceName)
 	if (type == "genset")
 		return VenusServiceType::GENSET;
 
+	if (type == "dcgenset")
+		return VenusServiceType::DCGENSET;
+
 	if (type == "motordrive")
 		return VenusServiceType::MOTOR_DRIVE;
 

@@ -38,6 +38,7 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 	CanBusService *valence = new CanBusService("dbus-valence", interface, this);
 	CanBusService *motordrive = new CanBusService("dbus-motordrive", interface, this);
 	CanBusService *rvc = new CanBusService("dbus-rv-c", interface, this);
+	CanBusService *hvCanBus = new CanBusService("hv-can-bus", interface, this);
 
 	// Disabled profile, without any service
 	CanBusProfile *profile = new CanBusProfile(0, this);
@@ -68,6 +69,10 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 
 	profile = new CanBusProfile(250000, this);
 	profile->addService(rvc);
+	mProfiles.append(profile);
+
+	profile = new CanBusProfile(500000, this);
+	profile->addService(hvCanBus);
 	mProfiles.append(profile);
 
 	VeQItem *item = settings->add(QString("Canbus/%1/Profile").arg(interface),

@@ -71,7 +71,8 @@ public:
 		CanProfileCanBms500,
 		CanProfileOceanvolt,
 		CanProfileNone250,
-		CanProfileRvC
+		CanProfileRvC,
+		CanProfileHighVoltage,
 	};
 
 	CanBusProfile(int bitrate, QObject *parent = 0);
@@ -96,9 +97,16 @@ public:
 	// Venus config, the CAN-bus might be fixed to a certain protocol and
 	// not be configurable by the user.
 	enum CanBusConfig {
-		CanAnyBus,
+		// "any" means, any of the for Venus tested protocols, before suppoting the
+		// hv-can-bus (CAN-fd). That is classic CAN up to 500 kbit/s.
+		CanAnyClassicBus,
 		CanForcedCanBusBms,
 		CanForcedVeCan,
+		// High Voltage CAN can send CAN fd frames as well. Hence CAN interfaces must
+		// explicitly indicate it is supported, not only that CAN-fd messages are
+		// supported, but also to assure the device can keep up with the higher
+		// througput. The HV protocol uses upto 1Mbit/s at the moment.
+		CanClassicAndHv,
 	};
 
 	CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QString interface,

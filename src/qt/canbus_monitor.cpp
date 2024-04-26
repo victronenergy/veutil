@@ -74,15 +74,19 @@ void CanInterfaceMonitor::addCanInterface(unsigned int ifindex, udev_device *dev
 	if (!sysname || !isCanBusInterface(sysname))
 		return;
 
-	CanBusProfiles::CanBusConfig config = CanBusProfiles::CanAnyBus;
+	CanBusProfiles::CanBusConfig config = CanBusProfiles::CanAnyClassicBus;
 	CanBusProfile::CanProfile defaultProfile = CanBusProfile::CanProfileVecan;
 
 	char const *configStr = udev_device_get_property_value(dev, "VE_CAN_CONFIG");
-	if (configStr && strcmp(configStr, "bms-only") == 0) {
-		config = CanBusProfiles::CanForcedCanBusBms;
-		defaultProfile = CanBusProfile::CanProfileCanBms500;
-	} else if (configStr && strcmp(configStr, "vecan-only") == 0) {
-		config = CanBusProfiles::CanForcedVeCan;
+	if (configStr) {
+		if (strcmp(configStr, "bms-only") == 0) {
+			config = CanBusProfiles::CanForcedCanBusBms;
+			defaultProfile = CanBusProfile::CanProfileCanBms500;
+		} else if (strcmp(configStr, "vecan-only") == 0) {
+			config = CanBusProfiles::CanForcedVeCan;
+		} else if (strcmp(configStr, "classic-and-hv") == 0) {
+			config = CanBusProfiles::CanClassicAndHv;
+		}
 	}
 
 	auto canInterface = new CanBusProfiles(mSettings, mService, QString::fromUtf8(sysname),

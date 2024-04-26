@@ -9,7 +9,7 @@ CanBusProfile::CanBusProfile(int bitrate, QObject *parent) :
 {
 }
 
-void CanBusProfile::enableProfile()
+void CanBusProfile::enableProfile() const
 {
 	for (CanBusService *service: mServices) {
 		service->setProfileEnabled(true);
@@ -17,7 +17,7 @@ void CanBusProfile::enableProfile()
 	}
 }
 
-void CanBusProfile::disableProfile()
+void CanBusProfile::disableProfile() const
 {
 	for (CanBusService *service: mServices) {
 		service->setProfileEnabled(false);
@@ -119,7 +119,7 @@ void CanBusProfiles::dbusItemChanged()
 	}
 }
 
-QVariantMap CanBusProfiles::canInfo()
+QVariantMap CanBusProfiles::canInfo() const
 {
 	QVariantMap ret;
 

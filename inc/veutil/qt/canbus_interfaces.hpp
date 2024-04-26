@@ -78,10 +78,10 @@ public:
 	CanBusProfile(int bitrate, QObject *parent = 0);
 	void addService(CanBusService *service) { mServices.append(service); }
 
-	void enableProfile();
-	void disableProfile();
+	void enableProfile() const;
+	void disableProfile() const;
 
-	int bitrate() { return mBitRate; }
+	int bitrate() const { return mBitRate; }
 
 private:
 	QList<CanBusService *> mServices;
@@ -119,10 +119,10 @@ public:
 
 	CanBusConfig getConfig() { return mConfig; }
 
-	QVariantMap canInfo();
+	QVariantMap canInfo() const;
 
 	// Return the active profile or the disable one, so it can't return 0.
-	CanBusProfile *activeProfile() { return mActiveProfile ? mActiveProfile : mProfiles[0]; }
+	CanBusProfile *activeProfile() const { return mActiveProfile ? mActiveProfile : mProfiles[0]; }
 
 private slots:
 	void dbusItemChanged();

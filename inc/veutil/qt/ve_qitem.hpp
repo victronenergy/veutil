@@ -563,4 +563,3 @@ public:
 protected:
 	VeQItem *mRoot;
 };
-

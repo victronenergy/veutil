@@ -102,10 +102,10 @@ void CanBusProfiles::changeCanBusBitRate(int bitrate)
 void CanBusProfiles::dbusItemChanged()
 {
 	VeQItem *item = static_cast<VeQItem *>(sender());
-	QVariant var = item->getValue();
+	QVariant canProfile = item->getValue();
 
-	if (var.isValid() && var.canConvert<int>()) {
-		int index = var.toUInt();
+	if (canProfile.isValid() && canProfile.canConvert<uint>()) {
+		int index = canProfile.toUInt();
 
 		if (index < 0 || index >= mProfiles.size())
 			return;

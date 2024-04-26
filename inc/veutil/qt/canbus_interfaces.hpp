@@ -25,27 +25,27 @@ class CanBusService : public DaemonToolsService
 
 public:
 	CanBusService(QString const &kind, QString const &interface, QObject *parent = 0) :
-			DaemonToolsService("/service/" + kind + "." + interface, parent),
-			mProfileEnabled(false)
+		DaemonToolsService("/service/" + kind + "." + interface, parent),
+		mProfileEnabled(false)
 	{
-			setCanArgs(kind, interface);
+		setCanArgs(kind, interface);
 	}
 
 	CanBusService(VeQItemSettings *settings, QString const &kind, QString const &interface,
-							  const QList<QString> &dbusObjectPathList, QObject *parent = 0) :
-			DaemonToolsService("/service/" + kind + "." + interface, parent),
-			mProfileEnabled(false)
+				  const QList<QString> &dbusObjectPathList, QObject *parent = 0) :
+		DaemonToolsService("/service/" + kind + "." + interface, parent),
+		mProfileEnabled(false)
 	{
-			mDbusObjectPathList.append(dbusObjectPathList);
-			initSettings(settings);
-			setCanArgs(kind, interface);
+		mDbusObjectPathList.append(dbusObjectPathList);
+		initSettings(settings);
+		setCanArgs(kind, interface);
 	}
 
 	void setCanArgs(QString const &kind, QString const &interface)
 	{
-			setSveCtlArgs(QStringList() <<
-							"-s" << kind <<
-							"-D" << "DEV=" + interface);
+		setSveCtlArgs(QStringList() <<
+						"-s" << kind <<
+						"-D" << "DEV=" + interface);
 	}
 
 	void setProfileEnabled(bool enabled) { mProfileEnabled = enabled; }
@@ -60,18 +60,18 @@ private:
 
 class CanBusProfile : public QObject
 {
-		Q_OBJECT
-		Q_ENUMS(CanProfile)
+	Q_OBJECT
+	Q_ENUMS(CanProfile)
 
 public:
 	enum CanProfile {
-			CanProfileDisabled,
-			CanProfileVecan,
-			CanProfileVecanAndCanBms,
-			CanProfileCanBms500,
-			CanProfileOceanvolt,
-			CanProfileNone250,
-			CanProfileRvC
+		CanProfileDisabled,
+		CanProfileVecan,
+		CanProfileVecanAndCanBms,
+		CanProfileCanBms500,
+		CanProfileOceanvolt,
+		CanProfileNone250,
+		CanProfileRvC
 	};
 
 	CanBusProfile(int bitrate, QObject *parent = 0);
@@ -96,14 +96,14 @@ public:
 	// Venus config, the CAN-bus might be fixed to a certain protocol and
 	// not be configurable by the user.
 	enum CanBusConfig {
-			CanAnyBus,
-			CanForcedCanBusBms,
-			CanForcedVeCan,
+		CanAnyBus,
+		CanForcedCanBusBms,
+		CanForcedVeCan,
 	};
 
 	CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QString interface,
-							   CanBusProfile::CanProfile defaultProfile, CanBusConfig config,
-							   QObject *parent = 0);
+					   CanBusProfile::CanProfile defaultProfile, CanBusConfig config,
+					   QObject *parent = 0);
 	~CanBusProfiles();
 
 	void setUiName(const QString &name) { mUiName = name; }

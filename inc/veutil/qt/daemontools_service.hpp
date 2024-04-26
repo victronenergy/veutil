@@ -52,9 +52,9 @@ public:
 
 protected:
 	enum SceCtlAction {
-			Idle,
-			Installing,
-			Removing
+		Idle,
+		Installing,
+		Removing
 	};
 
 	virtual void beforeStarted() {}
@@ -93,24 +93,24 @@ class DeamonToolsConsole : public DaemonToolsService
 public:
 	DeamonToolsConsole(VeQItemSettings *settings, const QString &servicePath, const QString &dbusObjectPath,
 									   QObject *parent = 0, QStringList const &sveCtlArgs = QStringList()) :
-			DaemonToolsService(settings, servicePath, dbusObjectPath, parent, sveCtlArgs)
+		DaemonToolsService(settings, servicePath, dbusObjectPath, parent, sveCtlArgs)
 	{
 	}
 
 protected:
 	void beforeStarted() override {
-			qDebug() << "[console] Stopping services on ttyconsole";
+		qDebug() << "[console] Stopping services on ttyconsole";
 
-			// prevent serial starter from using the console
-			execCmd("/opt/victronenergy/serial-starter/stop-tty.sh",
-					QStringList() << "ttyconsole");
+		// prevent serial starter from using the console
+		execCmd("/opt/victronenergy/serial-starter/stop-tty.sh",
+				QStringList() << "ttyconsole");
 	}
 
 	void afterStopped() override {
-			qDebug() << "[console] Starting services on ttyconsole";
+		qDebug() << "[console] Starting services on ttyconsole";
 
-			execCmd("/opt/victronenergy/serial-starter/start-tty.sh",
-					QStringList() << "ttyconsole");
+		execCmd("/opt/victronenergy/serial-starter/start-tty.sh",
+				QStringList() << "ttyconsole");
 	}
 };
 

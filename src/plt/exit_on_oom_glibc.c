@@ -39,6 +39,9 @@ static void oom(void)
 	if (!doExit)
 		return;
 
+	/* never recurse here */
+	pltContinueOnOom();
+
 	fputs("out of memory, exit\n", stderr);
 	fflush(stderr);
 	/*

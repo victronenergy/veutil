@@ -20,8 +20,8 @@ CanInterfaceMonitor::CanInterfaceMonitor(VeQItemSettings *settings, VeQItem *ser
 	// React to CAN-bus interface changes.
 	auto monitor = mCanMonitor.monitor();
 	udev_monitor_filter_add_match_subsystem_devtype(monitor, "net", nullptr);
-	connect(&mCanMonitor, SIGNAL(udevEvent(QUdevAction, struct udev_device *)),
-			SLOT(handleUdevCanBusEvent(QUdevAction, struct udev_device *)));
+	connect(&mCanMonitor, SIGNAL(udevEvent(QUdevAction,udev_device*)),
+			SLOT(handleUdevCanBusEvent(QUdevAction,udev_device*)));
 	mCanMonitor.enableReceiving();
 }
 

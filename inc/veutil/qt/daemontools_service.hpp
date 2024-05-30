@@ -47,6 +47,7 @@ public:
 
 	void install();
 	void remove();
+	void installOrRemove(bool doInstall) { if (doInstall) install(); else remove(); }
 
 	void setSveCtlArgs(const QStringList &args) { mSveCtlArgs = args; }
 	void setRestart(bool restart) { mRestart = restart; }

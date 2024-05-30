@@ -325,6 +325,9 @@ void DaemonToolsService::remove()
 	if (mSceCtlAction != Idle)
 		return;
 
+	if (!mIsInstalled)
+		return;
+
 	qDebug() << "[Service] removing" << mServicePath;
 	mSceCtlAction = Removing;
 	spawnSveCtl(mSveCtlArgs + QStringList() << "-r");

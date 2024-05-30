@@ -49,6 +49,7 @@ public:
 	void remove();
 
 	void setSveCtlArgs(const QStringList &args) { mSveCtlArgs = args; }
+	void setRestart(bool restart) { mRestart = restart; }
 
 protected:
 	enum SceCtlAction {

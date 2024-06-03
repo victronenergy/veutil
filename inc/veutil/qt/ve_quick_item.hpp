@@ -33,6 +33,7 @@ class VE_QITEM_EXPORT VeQuickItem : public QObject {
 	Q_PROPERTY(QString text READ getText NOTIFY textChanged WRITE setText)
 	Q_PROPERTY(QString uid READ getUid NOTIFY uidChanged WRITE setUid)
 	Q_PROPERTY(QVariant value READ getValue NOTIFY valueChanged WRITE setValueProperty)
+	Q_PROPERTY(double numberValue READ getNumberValue NOTIFY valueChanged FINAL)
 	Q_PROPERTY(VeQItem::State state READ getState NOTIFY stateChanged)
 	Q_PROPERTY(bool seen READ getSeen NOTIFY seenChanged)
 	Q_PROPERTY(QString unit READ getUnit NOTIFY unitChanged WRITE setUnit)
@@ -134,6 +135,7 @@ public:
 	QString getUid() { return mItem ? mItem->uniqueId() : QString(); }
 	void setUid(QString uid);
 	Q_INVOKABLE QVariant getValue(bool force = false);
+	double getNumberValue() const;
 	QVariant getSourceValue() { return mItem ? mItem->getValue() : QVariant(); }
 	VeQItem::State getState() { return mItem ? mItem->getState() : VeQItem::Idle; }
 	bool getSeen() { return mItem ? mItem->getSeen() : false; }
@@ -203,7 +205,14 @@ protected slots:
 
 	void onValueChanged() {
 		const bool prevIsValid = mIsValid;
-		mIsValid = getValue().isValid();
+		const QVariant val = getValue();
+		mIsValid = val.isValid();
+
+		// also convert to double for numberValue accessor.
+		bool ok = true;
+		const double ret = val.toDouble(&ok);
+		mNumberValue = (val.isValid() && ok) ? ret : qQNaN();
+
 		emit valueChanged();
 		if (prevIsValid != mIsValid)
 			emit isValidChanged();
@@ -228,6 +237,7 @@ protected:
 	uint32_t mIsValid:1;
 	uint32_t mIsAllocated:1;
 	uint32_t mInvalidate:1;
+	double mNumberValue = qQNaN();
 
 private:
 	void setup()

@@ -101,6 +101,11 @@ QVariant VeQuickItem::getValue(bool force)
 	return convertToDisplay(value);
 }
 
+double VeQuickItem::getNumberValue() const
+{
+	return mNumberValue;
+}
+
 /**
  * Handle changes of the value property.
  *
@@ -304,7 +309,7 @@ QVariant VeQuickItem::convertToDisplay(const QVariant &value)
 	bool ok;
 	double ret = mUnitConverter->convert(value.toDouble(&ok), mSourceUnit, mDisplayUnit);
 	if (!ok)
-		return QVariant();
+		return QVariant(qQNaN());
 
 	// Try to keep rounded figures, doubles don't have infinite precision.
 	// E.g. returning 99.99999999999999999 will cause unexpected behaviour when comparing

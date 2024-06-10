@@ -143,7 +143,7 @@ void VeQItemMqttProducer::open(
 		QMqttClient::ProtocolVersion protocolVersion)
 {
 	mIsVrmBroker = url.toString().startsWith(QStringLiteral("wss://webmqtt"))
-			&& url.toString().contains(QStringLiteral(".victronenergy.com/mqtt")); // might end with ?idUser=abcd parameter
+			&& url.toString().contains(QStringLiteral(".victronenergy.com")); // might end with /mqtt?idUser=abcd
 
 	if (mIsVrmBroker && mPortalId.isEmpty()) {
 		// For VRM, need a portal id, as we don't want to subscribe to wildcard topics.

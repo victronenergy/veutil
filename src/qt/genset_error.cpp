@@ -40,6 +40,28 @@ private:
 	Hatz() = default;
 };
 
+class CRE
+{
+	Q_DECLARE_TR_FUNCTIONS(CRE)
+
+public:
+	static QString getDescription(QString errorId);
+
+private:
+	CRE() = default;
+};
+
+class DEIF
+{
+	Q_DECLARE_TR_FUNCTIONS(DEIF)
+
+public:
+	static QString getDescription(QString errorId);
+
+private:
+	DEIF() = default;
+};
+
 QString GensetError::getDescription(QString errorId, int nrOfPhases)
 {
 	if (errorId == "")
@@ -50,6 +72,10 @@ QString GensetError::getDescription(QString errorId, int nrOfPhases)
 		return DSE::getDescription(errorId);
 	if (errorId.startsWith("hatz:", Qt::CaseInsensitive))
 		return Hatz::getDescription(errorId);
+	if (errorId.startsWith("cre:", Qt::CaseInsensitive))
+		return CRE::getDescription(errorId);
+	if (errorId.startsWith("deif:", Qt::CaseInsensitive))
+		return DEIF::getDescription(errorId);
 	return tr("Unknown error: %1").arg(errorId);
 }
 
@@ -805,4 +831,185 @@ QString Hatz::getDescription(QString errorId)
 	}
 
 	return result;
+}
+
+QString CRE::getDescription(QString errorId)
+{
+	auto parts = errorId.split("-");
+	if (parts.length() < 1)
+		return tr("Unknown error: ") + errorId;
+
+	bool ok;
+	auto errorNumber = parts[1].toUInt(&ok);
+	if (!ok)
+		return tr("Unknown error: ") + errorId;
+
+	switch (errorNumber) {
+		case 0: return "Fault";
+		case 1: return "Alarm";
+
+		default: return "Unknown error";
+	}
+}
+
+QString DEIF::getDescription(QString errorId)
+{
+	auto parts = errorId.split("-");
+	if (parts.length() < 1)
+		return tr("Unknown error: ") + errorId;
+
+	bool ok;
+	auto errorNumber = parts[1].toUInt(&ok);
+	if (!ok)
+		return tr("Unknown error: ") + errorId;
+
+	auto result = "";
+
+	switch (errorNumber) {
+		case 0: return "G -P> 1";
+		case 1: return "G -P> 2";
+		case 2: return "G -P> 3";
+		case 3: return "G I> 1";
+		case 4: return "G I> 2";
+		case 5: return "G I> 3";
+		case 6: return "G I> 4";
+		case 7: return "G I> inv.";
+		case 8: return "G Iv>";
+		case 9: return "G I>> 1";
+		case 10: return "G I>> 2";
+		case 11: return "G U> 1";
+		case 12: return "G U> 2";
+		case 13: return "G U< 1";
+		case 14: return "G U< 2";
+		case 15: return "G U< 3";
+		case 16: return "G f> 1";
+		case 17: return "G f> 2";
+		case 18: return "G f> 3";
+		case 19: return "G f< 1";
+		case 20: return "G f< 2";
+		case 21: return "G f< 3";
+		case 22: return "BB U> 1";
+		case 23: return "BB U> 2";
+		case 24: return "BB U> 3";
+		case 25: return "BB U< 1";
+		case 26: return "BB U< 2";
+		case 27: return "BB U< 3";
+		case 28: return "BB U< 4";
+		case 29: return "BB f> 1";
+		case 30: return "BB f> 2";
+		case 31: return "BB f> 3";
+		case 32: return "BB f< 1";
+		case 33: return "BB f< 2";
+		case 34: return "BB f< 3";
+		case 35: return "BB f< 4";
+		case 36: return "df/dt (ROCOF)";
+		case 37: return "Vector jump";
+		case 38: return "BB pos. seq. volt. low";
+		case 39: return "G P> 1";
+		case 40: return "G P> 2";
+		case 41: return "G P> 3";
+		case 42: return "G P> 4";
+		case 43: return "G P> 5";
+		case 44: return "Unbalance curr. 1";
+		case 45: return "Unbalance volt.";
+		case 46: return "G -Q>";
+		case 47: return "G Q>";
+		case 48: return "Gen. neg. seq. I";
+		case 49: return "Generator neg. seq. U";
+		case 50: return "Gen. zero seq. I";
+		case 51: return "Zero seq. U";
+		case 52: return "Directional overcurrent 1";
+		case 53: return "Directional overcurrent 2";
+		case 54: return "BB unbalance U";
+		case 70: return "U and Q< 1";
+		case 71: return "U and Q< 2";
+		case 72: return "GB ext. trip";
+		case 73: return "MB ext. trip";
+		case 78: return "G P dep. Q<";
+		case 79: return "G P dep. Q>";
+		case 80: return "Synchronising window";
+		case 81: return "Synchronising failure GB";
+		case 82: return "Synchronising failure MB";
+		case 83: return "Phase seq. failure A";
+		case 84: return "GB open failure";
+		case 85: return "GB close failure";
+		case 86: return "GB pos. failure";
+		case 87: return "MB open failure";
+		case 88: return "MB close failure";
+		case 89: return "MB pos. failure";
+		case 90: return "Close before excitation failure";
+		case 91: return "Phase seq. failure B";
+		case 96: return "GOVERNOR regulation fail.";
+		case 97: return "Deload error";
+		case 98: return "AVR regulation fail.";
+		case 112: return "Digital alarm input 39";
+		case 113: return "Digital alarm input 40";
+		case 114: return "Digital alarm input 41";
+		case 115: return "Digital alarm input 42";
+		case 116: return "Digital alarm input 43";
+		case 117: return "Digital alarm input 44";
+		case 118: return "Digital alarm input 45";
+		case 119: return "Digital alarm input 46";
+		case 120: return "Digital alarm input 47";
+		case 121: return "Digital alarm input 48";
+		case 122: return "Digital alarm input 49";
+		case 123: return "Digital alarm input 50";
+		case 172: return "Digital alarm input 4 (Emergency stop)";
+		case 183: return "M-Logic alarm 1";
+		case 184: return "M-Logic alarm 2";
+		case 185: return "M-Logic alarm 3";
+		case 186: return "M-Logic alarm 4";
+		case 187: return "M-Logic alarm 5";
+		case 188: return "M-Logic extended alarm 1";
+		case 189: return "M-Logic extended alarm 2";
+		case 190: return "M-Logic extended alarm 3";
+		case 191: return "M-Logic extended alarm 4";
+		case 208: return "Multi input terminal 20.1";
+		case 209: return "Multi input terminal 20.2";
+		case 210: return "W. fail. 20";
+		case 211: return "Multi input terminal 21.1";
+		case 212: return "Multi input terminal 21.2";
+		case 213: return "W. fail. 21";
+		case 214: return "Multi input terminal 22.1";
+		case 215: return "Multi input terminal 22.2";
+		case 216: return "W. fail. 22";
+		case 217: return "Overspeed 1";
+		case 218: return "Overspeed 2";
+		case 219: return "Crank failure";
+		case 220: return "Running feedback failure";
+		case 221: return "MPU wire failure";
+		case 222: return "Hz/V failure";
+		case 223: return "Start failure";
+		case 224: return "Stop failure";
+		case 225: return "U< aux. term. 1";
+		case 226: return "U> aux. term. 1";
+		case 229: return "Underspeed 1";
+		case 230: return "Multi input terminal 23.1";
+		case 231: return "Multi input terminal 23.2";
+		case 232: return "W. fail. 23";
+		case 240: return "Service timer 1";
+		case 241: return "Service timer 2";
+		case 242: return "Stop coil wire break";
+		case 244: return "Engine heater 1";
+		case 245: return "Battery test";
+		case 246: return "Battery asymmetry 1";
+		case 247: return "Battery asymmetry 2";
+		case 248: return "Max. ventilation 1";
+		case 249: return "Max. ventilation 2";
+		case 250: return "Block switchboard error";
+		case 251: return "Stop switchboard error";
+		case 252: return "Unit not in auto";
+		case 253: return "Fuel pump logic";
+		case 912: return "Fail class: Block start + breaker on";
+		case 913: return "Fail class: Warning";
+		case 914: return "Fail class: Trip GB";
+		case 915: return "Fail class: Trip GB + stop with cooling down";
+		case 916: return "Fail class: Trip GB + stop without cooling down";
+		case 917: return "Fail class: Trip MB";
+		case 918: return "Fail class: Safety stop";
+		case 919: return "Fail class: If MB present Trip MB else Trip GB";
+		case 920: return "Fail class: Controlled stop (deload + cooldown)";
+
+		default: return "Unknown error";
+	}
 }

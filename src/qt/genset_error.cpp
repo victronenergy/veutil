@@ -861,8 +861,6 @@ QString DEIF::getDescription(QString errorId)
 	if (!ok)
 		return tr("Unknown error: ") + errorId;
 
-	auto result = "";
-
 	switch (errorNumber) {
 		case 0: return "G -P> 1";
 		case 1: return "G -P> 2";

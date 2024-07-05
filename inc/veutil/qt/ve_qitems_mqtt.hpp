@@ -80,6 +80,7 @@ public:
 	VeQItem *createItem() override;
 
 	void open(const QHostAddress &host, int port);
+	void close();
 
 #ifdef MQTT_WEBSOCKETS_ENABLED
 	void open(
@@ -124,6 +125,7 @@ private:
 	void setConnectionState(ConnectionState connectionState);
 	void setError(QMqttClient::ClientError error);
 	void parseMessage(const QString &path, const QByteArray &message);
+	void stop();
 
 	QTimer *mKeepAliveTimer;
 	QTimer *mHeartBeatTimer;

@@ -251,6 +251,37 @@ void VeQItemMqttProducer::open(const QHostAddress &host, int port)
 	}, Qt::QueuedConnection);
 }
 
+void VeQItemMqttProducer::stop()
+{
+	setHeartbeatState(HeartbeatInactive);
+	if (error() == QMqttClient::NoError
+			&& mMqttConnection
+			&& mMqttConnection->error() != QMqttClient::NoError) {
+		setError(mMqttConnection->error());
+	}
+	mMissedHeartbeats = 0;
+	mKeepAliveTimer->stop();
+	mHeartBeatTimer->stop();
+	mReadyStateFallbackTimer->stop();
+	mReceivedMessage = false;
+	if (mMqttSubscription.data()) {
+		mMqttSubscription->unsubscribe();
+		QObject::disconnect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
+			this, &VeQItemMqttProducer::onSubscriptionMessageReceived);
+	}
+}
+
+void VeQItemMqttProducer::close()
+{
+	if (mMqttConnection) {
+		setConnectionState(Idle);
+		mMqttConnection->disconnectFromHost();
+		stop();
+		mMqttConnection->deleteLater();
+		mMqttConnection = nullptr;
+	}
+}
+
 // Clients should call this method in their aboutToConnect() handler,
 // prior to calling continueConnect().  This is because the VRM token may
 // change and so during reconnect, they will need to update the credentials.
@@ -319,23 +350,8 @@ void VeQItemMqttProducer::onConnected()
 
 void VeQItemMqttProducer::onDisconnected()
 {
-	setHeartbeatState(HeartbeatInactive);
 	setConnectionState(Disconnected);
-	if (error() == QMqttClient::NoError
-			&& mMqttConnection
-			&& mMqttConnection->error() != QMqttClient::NoError) {
-		setError(mMqttConnection->error());
-	}
-	mMissedHeartbeats = 0;
-	mKeepAliveTimer->stop();
-	mHeartBeatTimer->stop();
-	mReadyStateFallbackTimer->stop();
-	mReceivedMessage = false;
-	if (mMqttSubscription.data()) {
-		mMqttSubscription->unsubscribe();
-		QObject::disconnect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
-			this, &VeQItemMqttProducer::onSubscriptionMessageReceived);
-	}
+	stop();
 
 	if (mAutoReconnectAttemptCounter < mAutoReconnectMaxAttempts) {
 		// Attempt to reconnect.  We use a staggered exponential backoff interval.

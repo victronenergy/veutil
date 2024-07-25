@@ -116,7 +116,7 @@ void VeQItem::watchedChanged()
 {
 }
 
-VeQItem *VeQItem::itemChild(int n)
+VeQItem *VeQItem::itemChild(int n) const
 {
 	if (n >= mChildren.count())
 		return 0;
@@ -266,7 +266,7 @@ void VeQItem::produceText(QString text, VeQItem::State state)
 		emit textChanged(text);
 }
 
-QString VeQItem::id()
+QString VeQItem::id() const
 {
 	return mId;
 }

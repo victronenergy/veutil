@@ -222,10 +222,10 @@ public:
 	void discardPreview();
 
 	Children const &itemChildren() const { return mChildren; }
-	State getState() { return mState; }
-	State getTextState() { return mTextState; }
-	bool isLeaf() { return mIsLeaf; }
-	bool hasChildren() { return mChildren.count() != 0; }
+	State getState() const { return mState; }
+	State getTextState() const { return mTextState; }
+	bool isLeaf() const { return mIsLeaf; }
+	bool hasChildren() const { return mChildren.count() != 0; }
 
 	/**
 	 * returns if the item ever got in a synchronized state.
@@ -241,13 +241,13 @@ public:
 	virtual VeQItem *createChild(QString id, bool isLeaf = true, bool isTrusted = true);
 	VeQItem *createChild(QString id, QVariant var);
 
-	QString id();
+	QString id() const;
 	void setId(QString id);
 	QString uniqueId();
 
 	// note the Item prefixes are a bit verbose, but prevents name collision with QObjects
 	// own child, parent member functions.
-	VeQItem *itemChild(int n);
+	VeQItem *itemChild(int n) const;
 	Q_INVOKABLE VeQItem *itemGet(QString uid);
 	Q_INVOKABLE VeQItem *itemGetOrCreate(QString uid, bool isLeaf = true, bool isTrusted = true);
 	Q_INVOKABLE VeQItem *itemGetOrCreateAndProduce(QString uid, QVariant value);

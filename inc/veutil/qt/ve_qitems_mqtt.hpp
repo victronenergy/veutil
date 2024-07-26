@@ -135,6 +135,7 @@ private:
 #ifdef MQTT_WEBSOCKETS_ENABLED
 	WebSocketDevice *mWebSocket = nullptr;
 #endif // MQTT_WEBSOCKETS_ENABLED
+	QString mFullPublishCompletedEcho;
 	QString mClientId;
 	QString mPortalId;
 	QUrl mUrl;
@@ -148,6 +149,7 @@ private:
 	QMqttClient::ClientError mError;
 	QMqttClient::ProtocolVersion mProtocolVersion;
 	int mMissedHeartbeats;
+	bool mFullPublishReceived;
 	bool mReceivedMessage;
 	bool mIsVrmBroker;
 };

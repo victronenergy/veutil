@@ -79,6 +79,7 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 	  mError(QMqttClient::NoError),
 	  mProtocolVersion(QMqttClient::MQTT_3_1_1),
 	  mMissedHeartbeats(0),
+	  mFullPublishReceived(false),
 	  mReceivedMessage(false),
 	  mIsVrmBroker(false)
 {
@@ -264,6 +265,7 @@ void VeQItemMqttProducer::stop()
 	mHeartBeatTimer->stop();
 	mReadyStateFallbackTimer->stop();
 	mReceivedMessage = false;
+	mFullPublishReceived = false;
 	if (mMqttSubscription.data()) {
 		mMqttSubscription->unsubscribe();
 		QObject::disconnect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
@@ -468,9 +470,14 @@ void VeQItemMqttProducer::onSubscriptionMessageReceived(const QMqttMessage &mess
 		const QString readyTopic = notificationPrefix + QStringLiteral("/full_publish_completed");
 		if (topicName.compare(keepaliveTopic, Qt::CaseInsensitive) == 0) {
 			// ignore keepalive topic.
-		} else if (topicName.compare(readyTopic, Qt::CaseInsensitive) == 0
-				&& connectionState() == VeQItemMqttProducer::Initializing) {
-			setConnectionState(VeQItemMqttProducer::Ready);
+		} else if (topicName.compare(readyTopic, Qt::CaseInsensitive) == 0 && !mFullPublishReceived) {
+			const QJsonObject payload = QJsonDocument::fromJson(message.payload()).object();
+			if (payload.value(QStringLiteral("full-publish-completed-echo")).toString() == mFullPublishCompletedEcho) {
+				mFullPublishReceived = true;
+				if (connectionState() == VeQItemMqttProducer::Initializing) {
+					setConnectionState(VeQItemMqttProducer::Ready);
+				}
+			}
 		} else if (topicName.compare(heartbeatTopic, Qt::CaseInsensitive) == 0) {
 			// (re)start our heartbeat timer.
 			mHeartBeatTimer->start();
@@ -536,9 +543,18 @@ void VeQItemMqttProducer::doKeepAlive(bool suppressRepublish)
 			return;
 		}
 #endif
-		if (mIsVrmBroker || !suppressRepublish) {
-			mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)),
-					QByteArray());
+		if (!suppressRepublish) {
+			// initial keep-alive.
+			if (mIsVrmBroker && !mFullPublishReceived) {
+				// see the related topic N/<portal_id>/full_publish_completed
+				const quint64 uniqueId = QRandomGenerator::global()->generate64();
+				mFullPublishCompletedEcho = QStringLiteral("%1").arg(uniqueId, 16, 16, QLatin1Char('0'));
+				mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)),
+						QStringLiteral("{ \"keepalive-options\" : [ { \"full-publish-completed-echo\": \"%1\" } ] }")
+							.arg(mFullPublishCompletedEcho).toUtf8());
+			} else {
+				mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)));
+			}
 			mKeepAliveTimer->start();
 		} else {
 			mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)),

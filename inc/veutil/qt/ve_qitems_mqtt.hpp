@@ -12,6 +12,8 @@
 #include <QString>
 #include <QByteArray>
 #include <QUrl>
+#include <QQueue>
+#include <QMutex>
 
 #ifdef MQTT_WEBSOCKETS_ENABLED
 #include <QWebSocket>
@@ -51,14 +53,22 @@ class VeQItemMqttProducer : public VeQItemProducer
 	Q_PROPERTY(QString portalId READ portalId WRITE setPortalId NOTIFY portalIdChanged)
 
 public:
-
+	// The connection state is also the state machine state.
+	// Only certain state transitions are allowable.
 	enum ConnectionState {
 		Idle,
+		WaitingToConnect,
+		TransportConnecting,
+		TransportConnected,
 		Connecting,
 		Connected,
+		Identified,
 		Initializing,
 		Ready,
 		Disconnected,
+		WaitingToReconnect,
+		TransportReconnecting,
+		TransportReconnected,
 		Reconnecting,
 		Failed
 	};
@@ -112,6 +122,10 @@ public Q_SLOTS:
 	void continueConnect();
 
 private Q_SLOTS:
+#ifdef MQTT_WEBSOCKETS_ENABLED
+	void onSocketConnected();
+	void onSocketDisconnected();
+#endif // MQTT_WEBSOCKETS_ENABLED
 	void onConnected();
 	void onDisconnected();
 	void onErrorChanged(QMqttClient::ClientError error);
@@ -121,9 +135,23 @@ private Q_SLOTS:
 	void doKeepAlive(bool suppressRepublish = false);
 
 private:
+	struct StateTransition {
+		QString source; // for debugging only, the method which enqueued the state transition.
+		ConnectionState from = Idle;
+		ConnectionState to = Idle;
+		bool setError = false;
+		QMqttClient::ClientError error = QMqttClient::NoError;
+	};
+	QMutex mStateTransitionsMutex; // QMqttClient has threads.
+	QQueue<StateTransition> mStateTransitions;
+	bool isValidStateTransition(ConnectionState from, ConnectionState to) const;
+	void enqueueStateTransition(const StateTransition &transition);
+	void transitionState();
+
 	void setHeartbeatState(HeartbeatState heartbeatState);
 	void setConnectionState(ConnectionState connectionState);
 	void setError(QMqttClient::ClientError error);
+	void handleMessage(const QMqttMessage &message);
 	void parseMessage(const QString &path, const QByteArray &message);
 	void stop();
 
@@ -149,8 +177,6 @@ private:
 	QMqttClient::ClientError mError;
 	QMqttClient::ProtocolVersion mProtocolVersion;
 	int mMissedHeartbeats;
-	bool mFullPublishReceived;
-	bool mReceivedMessage;
 	bool mIsVrmBroker;
 };
 
@@ -185,6 +211,8 @@ Q_SIGNALS:
 	void disconnected();
 
 public Q_SLOTS:
+	void onSocketConnected();
+	void onSocketDisconnected();
 	void onBinaryMessageReceived(const QByteArray &message);
 
 private:
@@ -192,6 +220,8 @@ private:
 	QByteArray mProtocol;
 	QByteArray mData;
 	QWebSocket mWebSocket;
+	bool mConnected = false;
+	bool mClosing = false;
 };
 #endif // MQTT_WEBSOCKETS_ENABLED
 

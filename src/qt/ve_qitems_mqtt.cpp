@@ -1,5 +1,6 @@
 #include <veutil/qt/ve_qitems_mqtt.hpp>
 
+#include <QMutexLocker>
 #include <QRandomGenerator>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -79,8 +80,6 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 	  mError(QMqttClient::NoError),
 	  mProtocolVersion(QMqttClient::MQTT_3_1_1),
 	  mMissedHeartbeats(0),
-	  mFullPublishReceived(false),
-	  mReceivedMessage(false),
 	  mIsVrmBroker(false)
 {
 	// Create a sanitized clientId.  MQTT v3.1 spec states that the clientId must be
@@ -110,7 +109,13 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 #ifdef MQTT_WEBSOCKETS_ENABLED
 			if (mWebSocket && !mWebSocket->isOpen()) {
 				qWarning() << "Missed heartbeat due to websocket disconnection";
-				onDisconnected();
+				enqueueStateTransition({
+					QStringLiteral("heartbeatTimer"),
+					mConnectionState,
+					Disconnected,
+					true, // set error.
+					QMqttClient::TransportInvalid
+				});
 				return;
 			}
 #endif
@@ -127,8 +132,14 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 	mReadyStateFallbackTimer->setInterval(5000);
 	connect(mReadyStateFallbackTimer, &QTimer::timeout,
 		this, [this] {
-			if (connectionState() == Initializing) {
-				setConnectionState(Ready);
+			if (mConnectionState == Initializing) {
+				enqueueStateTransition({
+					QStringLiteral("readyStateFallbackTimer"),
+					Initializing,
+					Ready,
+					false, // don't set error.
+					QMqttClient::NoError
+				});
 			}
 		});
 }
@@ -137,6 +148,361 @@ VeQItem *VeQItemMqttProducer::createItem()
 {
 	return new VeQItemMqtt(this);
 }
+
+bool VeQItemMqttProducer::isValidStateTransition(ConnectionState from, ConnectionState to) const
+{
+	switch (from) {
+		case Idle:
+			return to == WaitingToConnect;
+		case WaitingToConnect:
+			return to == TransportConnecting // WebSocket case
+				|| to == Connecting
+				|| to == Idle;
+		case TransportConnecting:
+			return to == TransportConnected
+				|| to == Disconnected
+				|| to == Idle;
+		case TransportConnected:
+			return to == Connecting
+				|| to == Disconnected
+				|| to == Idle;
+		case Connecting:
+			return to == Connected
+				|| to == Disconnected
+				|| to == Idle;
+		case Connected:
+			return to == Identified
+				|| to == Disconnected
+				|| to == Idle;
+		case Identified:
+			return to == Initializing
+				|| to == Disconnected
+				|| to == Idle;
+		case Initializing:
+			return to == Ready
+				|| to == Disconnected
+				|| to == Idle;
+		case Ready:
+			return to == Disconnected
+				|| to == Idle;
+		case Disconnected:
+			return to == WaitingToConnect
+				|| to == WaitingToReconnect
+				|| to == Failed
+				|| to == Idle;
+		case WaitingToReconnect:
+			return to == TransportReconnecting // WebSocket case
+				|| to == Reconnecting
+				|| to == Idle;
+		case TransportReconnecting:
+			return to == TransportReconnected
+				|| to == Disconnected
+				|| to == Idle;
+		case TransportReconnected:
+			return to == Reconnecting
+				|| to == Disconnected
+				|| to == Idle;
+		case Reconnecting:
+			return to == Connected
+				|| to == Disconnected
+				|| to == Idle;
+		case Failed:
+			return to == WaitingToConnect
+				|| to == Idle;
+		default: break;
+	}
+	return false;
+}
+
+void VeQItemMqttProducer::enqueueStateTransition(const StateTransition &transition)
+{
+	QMutexLocker locker(&mStateTransitionsMutex);
+	mStateTransitions.enqueue(transition);
+	if (mStateTransitions.size() == 1) {
+		QMetaObject::invokeMethod(this, &VeQItemMqttProducer::transitionState, Qt::QueuedConnection);
+	}
+}
+
+void VeQItemMqttProducer::transitionState()
+{
+	bool haveTransition = false;
+	ConnectionState state = mConnectionState;
+	StateTransition transition;
+	transition.from = state;
+
+	{
+		QMutexLocker locker(&mStateTransitionsMutex);
+		while (!mStateTransitions.isEmpty()) {
+			StateTransition head = mStateTransitions.dequeue();
+			// Due to various things being asynchronous (QIODevice, QMqttClient etc)
+			// we cannot rely on all potential signal handlers being invoked in the
+			// correct order (depending on whether they are direct or queued connections etc).
+			// Thus, we need to ensure that we don't blindly transition between states.
+			if (head.from == head.to && head.setError) {
+				// Some "transitions" simply specify an error from lower levels.
+				// If one of these is set, ensure that we set the error when we perform the transition,
+				// but don't override a previously-set error (e.g. from Disconnect transition).
+				if (!transition.setError || transition.error == QMqttClient::NoError) {
+					transition.setError = true;
+					transition.error = head.error;
+				}
+			} else if (head.from != state) {
+				qWarning() << "Ignoring queued transition from old state:" << head.from << "to" << head.to << "by" << head.source << "as we are now in state:" << state;
+			} else if (!isValidStateTransition(head.from, head.to)) {
+				qWarning() << "Ignoring invalid transition from state:" << head.from << "to" << head.to << "by" << head.source;
+			} else {
+				// qDebug() << "Observing valid transition from state:" << head.from << "to" << head.to << "by" << head.source;
+				// We have a valid transition.  Determine what sort of transition it is.
+				haveTransition = true;
+				if (head.to == Disconnected) {
+					// Transitions to Disconnected state are higher priority than other transitions.
+					transition.to = Disconnected;
+					transition.source = head.source;
+					// Such a transition may also have an error associated with it.
+					// Allow overriding other previously-set errors with this one.
+					if (head.setError && head.error != QMqttClient::NoError) {
+						transition.setError = true;
+						transition.error = head.error;
+					}
+				} else if (head.to == TransportConnected
+						&& (state == Connecting || state == Reconnecting)
+						&& transition.to == Connected) {
+					// Transitions from Connecting to Connected are higher priority than
+					// transitions from Connecting to TransportConnected.
+					// So don't update the transition.to here.
+				} else {
+					transition.to = head.to;
+					transition.source = head.source;
+				}
+			}
+		}
+	}
+
+	if (transition.setError) {
+		setError(transition.error);
+	}
+
+	if (haveTransition) {
+		// transition to the appropriate state, then perform side effects
+		// associated with that state.
+		setConnectionState(transition.to);
+		switch (transition.to) {
+			case Idle: {
+				stop();
+				if (mMqttConnection) {
+					mMqttConnection->disconnectFromHost();
+					mMqttConnection->deleteLater();
+					mMqttConnection = nullptr;
+				}
+#ifdef MQTT_WEBSOCKETS_ENABLED
+				if (mWebSocket) {
+					mWebSocket->deleteLater();
+					mWebSocket = nullptr;
+				}
+#endif
+				break;
+			}
+
+			case WaitingToConnect: {
+				if (mMqttConnection) {
+					mMqttConnection->disconnectFromHost();
+					mMqttConnection->deleteLater();
+				}
+				mMqttConnection = new QMqttClient(this);
+				mMqttConnection->setClientId(mClientId);
+				if (!mHostName.isEmpty()) {
+					mMqttConnection->setHostname(mHostName);
+					mMqttConnection->setPort(mPort);
+				}
+
+				connect(mMqttConnection, &QMqttClient::connected,
+					this, &VeQItemMqttProducer::onConnected);
+				connect(mMqttConnection, &QMqttClient::disconnected,
+					this, &VeQItemMqttProducer::onDisconnected);
+				connect(mMqttConnection, &QMqttClient::errorChanged,
+					this, &VeQItemMqttProducer::onErrorChanged);
+				connect(mMqttConnection, &QMqttClient::stateChanged,
+					this, &VeQItemMqttProducer::onStateChanged);
+				connect(mMqttConnection, &QMqttClient::messageReceived,
+					this, &VeQItemMqttProducer::onMessageReceived);
+			} // fall through
+			case WaitingToReconnect: {
+				const int interval = mReconnectAttemptIntervals[mAutoReconnectAttemptCounter++];
+				QTimer::singleShot(
+					interval + QRandomGenerator::global()->bounded(interval/2),
+					this, [this] {
+						enqueueStateTransition({
+							mConnectionState == WaitingToConnect ? QStringLiteral("WaitingToConnect") : QStringLiteral("WaitingToReconnect"),
+							mConnectionState,
+#ifdef MQTT_WEBSOCKETS_ENABLED
+							// Only transition to TransportConnecting state for WebSocket connections
+							mHostName.isEmpty()
+								? (mConnectionState == WaitingToConnect ? TransportConnecting : TransportReconnecting)
+								: (mConnectionState == WaitingToConnect ? Connecting : Reconnecting),
+#else
+							mConnectionState == WaitingToConnect ? Connecting : Reconnecting,
+#endif
+							false, // don't set error.
+							QMqttClient::NoError
+						});
+					});
+
+				break;
+			}
+
+			case TransportConnecting: // fall through
+			case TransportReconnecting: {
+#ifdef MQTT_WEBSOCKETS_ENABLED
+				if (mWebSocket) {
+					mWebSocket->deleteLater();
+				}
+
+				mWebSocket = new WebSocketDevice(this);
+				mWebSocket->setUrl(mUrl);
+				mWebSocket->setProtocol( mProtocolVersion == QMqttClient::MQTT_3_1
+						? "mqttv3.1" : "mqtt");
+
+				connect(mWebSocket, &WebSocketDevice::disconnected,
+					this, &VeQItemMqttProducer::onSocketDisconnected);
+				connect(mWebSocket, &WebSocketDevice::connected,
+					this, &VeQItemMqttProducer::onSocketConnected);
+
+				mWebSocket->open(QIODeviceBase::ReadWrite);
+#else
+				Q_ASSERT_X(true, "MQTT producer", "Invalid transport connecting state in non-websockets build");
+#endif
+				break;
+			}
+
+			case TransportConnected: // fall through
+			case TransportReconnected: {
+#ifdef MQTT_WEBSOCKETS_ENABLED
+				mMqttConnection->setProtocolVersion(mProtocolVersion);
+				mMqttConnection->setTransport(mWebSocket, QMqttClient::IODevice);
+				enqueueStateTransition({
+					mConnectionState == TransportConnected ? QStringLiteral("TransportConnected") : QStringLiteral("TransportReconnected"),
+					mConnectionState,
+					mConnectionState == TransportConnected ? Connecting : Reconnecting,
+					false, // don't set error.
+					QMqttClient::NoError
+				});
+#else
+				Q_ASSERT_X(true, "MQTT producer", "Invalid transport connected state in non-websockets build");
+#endif
+				break;
+			}
+
+			case Connecting: // fall through
+			case Reconnecting: {
+				QMetaObject::invokeMethod(this, [this] { Q_EMIT aboutToConnect(); }, Qt::QueuedConnection);
+				break;
+			}
+
+			case Connected: {
+				mAutoReconnectAttemptCounter = 0;
+				if (mPortalId.isEmpty()) {
+					mMqttConnection->subscribe(QStringLiteral("N/+/system/0/Serial"));
+				} else {
+					// we already know the portal id, transition directly to the identified state.
+					enqueueStateTransition({
+						QStringLiteral("Connected"),
+						Connected,
+						Identified,
+						false, // don't set error.
+						QMqttClient::NoError
+					});
+				}
+				break;
+			}
+
+			case Identified: {
+				mMqttConnection->unsubscribe(QStringLiteral("N/+/system/0/Serial"));
+				QObject::disconnect(mMqttConnection, &QMqttClient::messageReceived,
+					this, &VeQItemMqttProducer::onMessageReceived);
+
+				if (mMqttSubscription) {
+					qWarning() << "MQTT: previous subscription was not cleared! FIXME!";
+				}
+				mMqttSubscription = mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
+				QObject::connect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
+					this, &VeQItemMqttProducer::onSubscriptionMessageReceived, Qt::UniqueConnection);
+				doKeepAlive(/* suppressRepublish = */ false);
+			}
+
+			case Initializing: {
+				// In this state, we are waiting for the broker to send us
+				// the full_publish_completed message.
+				// We will transition to Ready state after some time
+				// even if we are still receiving initial messages,
+				// just in case the broker forgets to send us this message.
+				mReadyStateFallbackTimer->start();
+				break;
+			}
+
+			case Ready: {
+				break;
+			}
+
+			case Disconnected: {
+				stop();
+#ifdef MQTT_WEBSOCKETS_ENABLED
+				if (mWebSocket) {
+					mWebSocket->deleteLater();
+					mWebSocket = nullptr;
+				}
+#endif
+				if (mAutoReconnectAttemptCounter < mAutoReconnectMaxAttempts) {
+					// Attempt to reconnect.  We use a staggered exponential backoff interval.
+					enqueueStateTransition({
+						QStringLiteral("Disconnected"),
+						Disconnected,
+						WaitingToReconnect,
+						false, // don't set error.
+						QMqttClient::NoError
+					});
+				} else {
+					// Failed to connect.  After one minute we will attempt a clean connect.
+					enqueueStateTransition({
+						QStringLiteral("Disconnected"),
+						Disconnected,
+						Failed,
+						false, // don't set error.
+						QMqttClient::NoError
+					});
+				}
+				break;
+			}
+
+			case Failed: {
+				// Wait one minute and then start the connection process again.
+				mAutoReconnectAttemptCounter = 0;
+				if (mMqttConnection) {
+					mMqttConnection->disconnectFromHost();
+					mMqttConnection->deleteLater();
+					mMqttConnection = nullptr;
+				}
+				QTimer::singleShot(
+					60000,
+					this, [this] {
+						enqueueStateTransition({
+							QStringLiteral("Failed"),
+							Failed,
+							WaitingToConnect,
+							false, // don't set error.
+							QMqttClient::NoError
+						});
+					});
+				break;
+			}
+
+			default: {
+				qWarning() << "Invalid destination state, ignoring.";
+				break;
+			}
+		}
+	}
+}
+
 
 #ifdef MQTT_WEBSOCKETS_ENABLED
 void VeQItemMqttProducer::open(
@@ -149,139 +515,55 @@ void VeQItemMqttProducer::open(
 	if (mIsVrmBroker && mPortalId.isEmpty()) {
 		// For VRM, need a portal id, as we don't want to subscribe to wildcard topics.
 		qWarning() << "Attempting to connect to VRM broker, but no portal id provided!";
-		setError(QMqttClient::UnknownError);
+		enqueueStateTransition({
+			QStringLiteral("open(url, protocolVersion)"),
+			mConnectionState,
+			Idle,
+			true, // set error.
+			QMqttClient::UnknownError
+		});
 		return;
 	}
 
-	mAutoReconnectAttemptCounter = 0;
-	setError(QMqttClient::NoError);
+	mUrl = url;
+	mProtocolVersion = protocolVersion;
+	mHostName = QString();
+	mPort = 0;
 
-	// Invoke via queued connection to ensure that the children
-	// are created in the appropriate thread.
-	QMetaObject::invokeMethod(this, [this, url, protocolVersion] {
-		mUrl = url;
-		mProtocolVersion = protocolVersion;
-		mHostName = QString();
-		mPort = 0;
-
-		if (mMqttConnection) {
-			mMqttConnection->deleteLater();
-		}
-
-		mMqttConnection = new QMqttClient(this);
-		mMqttConnection->setClientId(mClientId);
-
-		connect(mMqttConnection, &QMqttClient::connected,
-			this, &VeQItemMqttProducer::onConnected);
-		connect(mMqttConnection, &QMqttClient::disconnected,
-			this, &VeQItemMqttProducer::onDisconnected);
-		connect(mMqttConnection, &QMqttClient::errorChanged,
-			this, &VeQItemMqttProducer::onErrorChanged);
-		connect(mMqttConnection, &QMqttClient::stateChanged,
-			this, &VeQItemMqttProducer::onStateChanged,
-			Qt::QueuedConnection); // Queued to avoid double onDisconnected().
-		connect(mMqttConnection, &QMqttClient::messageReceived,
-			this, &VeQItemMqttProducer::onMessageReceived);
-
-		if (mWebSocket) {
-			mWebSocket->deleteLater();
-		}
-
-		mWebSocket = new WebSocketDevice(mMqttConnection);
-		mWebSocket->setUrl(url);
-		mWebSocket->setProtocol(
-			  protocolVersion == QMqttClient::MQTT_3_1 ? "mqttv3.1" : "mqtt");
-
-		connect(mWebSocket, &WebSocketDevice::disconnected,
-			this, [this] {
-				onStateChanged(QMqttClient::Disconnected);
-			}, Qt::QueuedConnection);
-
-		connect(mWebSocket, &WebSocketDevice::connected,
-			this, [this, protocolVersion] {
-				mMqttConnection->setProtocolVersion(protocolVersion);
-				mMqttConnection->setTransport(mWebSocket, QMqttClient::IODevice);
-				QMetaObject::invokeMethod(this, [this] { Q_EMIT aboutToConnect(); }, Qt::QueuedConnection);
-			}, Qt::QueuedConnection);
-
-		if (connectionState() != Reconnecting) {
-			setConnectionState(Connecting);
-		}
-		mWebSocket->open(QIODeviceBase::ReadWrite);
-	}, Qt::QueuedConnection);
+	enqueueStateTransition({
+		QStringLiteral("open(url, protocolVersion)"),
+		mConnectionState,
+		WaitingToConnect,
+		false, // don't set error.
+		QMqttClient::NoError
+	});
 }
 #endif // MQTT_WEBSOCKETS_ENABLED
 
 void VeQItemMqttProducer::open(const QHostAddress &host, int port)
 {
-	mAutoReconnectAttemptCounter = 0;
-	setError(QMqttClient::NoError);
+	mHostName = host.toString();
+	mPort = port;
+	mUrl = QUrl();
 
-	// Invoke via queued connection to ensure that the children
-	// are created in the appropriate thread.
-	QMetaObject::invokeMethod(this, [this, host, port] {
-		mHostName = host.toString();
-		mPort = port;
-		mUrl = QUrl();
-
-		if (mMqttConnection) {
-			mMqttConnection->deleteLater();
-		}
-
-		mMqttConnection = new QMqttClient(this);
-		mMqttConnection->setClientId(mClientId);
-		mMqttConnection->setHostname(mHostName);
-		mMqttConnection->setPort(mPort);
-
-		connect(mMqttConnection, &QMqttClient::connected,
-			this, &VeQItemMqttProducer::onConnected);
-		connect(mMqttConnection, &QMqttClient::disconnected,
-			this, &VeQItemMqttProducer::onDisconnected);
-		connect(mMqttConnection, &QMqttClient::errorChanged,
-			this, &VeQItemMqttProducer::onErrorChanged);
-		connect(mMqttConnection, &QMqttClient::stateChanged,
-			this, &VeQItemMqttProducer::onStateChanged,
-			Qt::QueuedConnection); // Queued to avoid double onDisconnected().
-		connect(mMqttConnection, &QMqttClient::messageReceived,
-			this, &VeQItemMqttProducer::onMessageReceived);
-
-		QMetaObject::invokeMethod(this, [this] { Q_EMIT aboutToConnect(); }, Qt::QueuedConnection);
-		if (connectionState() != Reconnecting) {
-			setConnectionState(Connecting);
-		}
-	}, Qt::QueuedConnection);
-}
-
-void VeQItemMqttProducer::stop()
-{
-	setHeartbeatState(HeartbeatInactive);
-	if (error() == QMqttClient::NoError
-			&& mMqttConnection
-			&& mMqttConnection->error() != QMqttClient::NoError) {
-		setError(mMqttConnection->error());
-	}
-	mMissedHeartbeats = 0;
-	mKeepAliveTimer->stop();
-	mHeartBeatTimer->stop();
-	mReadyStateFallbackTimer->stop();
-	mReceivedMessage = false;
-	mFullPublishReceived = false;
-	if (mMqttSubscription.data()) {
-		mMqttSubscription->unsubscribe();
-		QObject::disconnect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
-			this, &VeQItemMqttProducer::onSubscriptionMessageReceived);
-	}
+	enqueueStateTransition({
+		QStringLiteral("open(host, port)"),
+		mConnectionState,
+		WaitingToConnect,
+		false, // don't set error.
+		QMqttClient::NoError
+	});
 }
 
 void VeQItemMqttProducer::close()
 {
-	if (mMqttConnection) {
-		setConnectionState(Idle);
-		mMqttConnection->disconnectFromHost();
-		stop();
-		mMqttConnection->deleteLater();
-		mMqttConnection = nullptr;
-	}
+	enqueueStateTransition({
+		QStringLiteral("close"),
+		mConnectionState,
+		Idle,
+		false, // don't set error.
+		QMqttClient::NoError
+	});
 }
 
 // Clients should call this method in their aboutToConnect() handler,
@@ -301,124 +583,67 @@ void VeQItemMqttProducer::continueConnect()
 	// deleteLater()'d will have been properly destroyed, to avoid
 	// race condition where we might have two connections active.
 	QMetaObject::invokeMethod(this, [this] {
-		mMqttConnection->setCleanSession(false);
-		mMqttConnection->connectToHost();
+		if (mMqttConnection) {
+			mMqttConnection->setCleanSession(false);
+			mMqttConnection->connectToHost();
+		} else {
+			// the MQTT connection was deleted out from under us...
+			enqueueStateTransition({
+				QStringLiteral("continueConnect"),
+				mConnectionState,
+				Failed,
+				true, // set error.
+				QMqttClient::UnknownError
+			});
+		}
 	}, Qt::QueuedConnection);
+}
+
+void VeQItemMqttProducer::stop()
+{
+	setHeartbeatState(HeartbeatInactive);
+	mMissedHeartbeats = 0;
+	mKeepAliveTimer->stop();
+	mHeartBeatTimer->stop();
+	mReadyStateFallbackTimer->stop();
+	if (mMqttSubscription.data()) {
+		mMqttSubscription->unsubscribe();
+		QObject::disconnect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
+			this, &VeQItemMqttProducer::onSubscriptionMessageReceived);
+		mMqttSubscription.clear();
+	}
 }
 
 void VeQItemMqttProducer::onConnected()
 {
-	mAutoReconnectAttemptCounter = 0;
-	setConnectionState(Connected);
-
-	if (mPortalId.isEmpty()) {
-		mMqttConnection->subscribe(QStringLiteral("N/+/system/0/Serial"));
-	} else {
-		QObject::disconnect(mMqttConnection, &QMqttClient::messageReceived,
-			this, &VeQItemMqttProducer::onMessageReceived);
-		mMqttSubscription = mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
-		QObject::connect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
-			this, &VeQItemMqttProducer::onSubscriptionMessageReceived, Qt::UniqueConnection);
-		doKeepAlive();
-	}
-
-	// QMqttClient has some internal state which sometimes isn't cleaned up
-	// properly on disconnection.  To allow reconnection, we need to delete
-	// the client, transition back to idle state, and then reconnect.
-	QTimer::singleShot(3000, this, [this] {
-		// If we're still waiting to receive a message from the broker more
-		// than 3 seconds after connecting, assume we are in the stuck state.
-		if (connectionState() == VeQItemMqttProducer::Connected) {
-			qWarning() << "Automatic reconnection failed, trying clean reconnect.";
-			mMqttConnection->deleteLater();
-			mMqttConnection = nullptr;
-			setConnectionState(Idle);
-			// Immediately reopening the connection can fail.
-			// Allow asynchronous cleanup to complete before reconnecting.
-			QTimer::singleShot(1000, this, [this] {
-#ifdef MQTT_WEBSOCKETS_ENABLED
-				if (mHostName.isEmpty()) {
-					open(mUrl, mProtocolVersion);
-				} else {
-					open(QHostAddress(mHostName), mPort);
-				}
-#else
-				open(QHostAddress(mHostName), mPort);
-#endif
-			});
-		}
+	enqueueStateTransition({
+		QStringLiteral("onConnected"),
+		mConnectionState,
+		Connected,
+		false, // don't set error.
+		QMqttClient::NoError
 	});
 }
 
 void VeQItemMqttProducer::onDisconnected()
 {
-	setConnectionState(Disconnected);
-	stop();
-
-	if (mAutoReconnectAttemptCounter < mAutoReconnectMaxAttempts) {
-		// Attempt to reconnect.  We use a staggered exponential backoff interval.
-		const int interval = mReconnectAttemptIntervals[mAutoReconnectAttemptCounter++];
-#ifdef MQTT_WEBSOCKETS_ENABLED
-		if (!mWebSocket || !mWebSocket->isValid()) {
-			QTimer::singleShot(interval + QRandomGenerator::global()->bounded(interval/2),
-					this, [this] {
-						setConnectionState(Reconnecting);
-						quint16 count = mAutoReconnectAttemptCounter;
-						if (mHostName.isEmpty()) {
-							open(mUrl, mProtocolVersion);
-						} else {
-							open(QHostAddress(mHostName), mPort);
-						}
-						mAutoReconnectAttemptCounter = count;
-					});
-		} else {
-			QTimer::singleShot(interval + QRandomGenerator::global()->bounded(interval/2),
-					this, [this] {
-						setConnectionState(Reconnecting);
-						emit aboutToConnect();
-					});
-		}
-#else
-		QTimer::singleShot(interval + QRandomGenerator::global()->bounded(interval/2),
-				this, [this] {
-					setConnectionState(Reconnecting);
-					emit aboutToConnect();
-				});
-#endif
-	} else {
-		// Failed to connect.  Wait one minute and then start the connection process again.
-		setConnectionState(Failed);
-		mAutoReconnectAttemptCounter = 0;
-		QTimer::singleShot(60000, this, &VeQItemMqttProducer::onDisconnected);
-	}
+	enqueueStateTransition({
+		QStringLiteral("onDisconnected"),
+		mConnectionState,
+		Disconnected,
+		false, // don't set error.
+		QMqttClient::NoError
+	});
 }
 
 void VeQItemMqttProducer::onErrorChanged(QMqttClient::ClientError error)
 {
 	setError(error);
-
-	if (mMqttConnection && mMqttConnection->state() == QMqttClient::Disconnected
-			&& (mConnectionState == VeQItemMqttProducer::Connecting
-				|| mConnectionState == VeQItemMqttProducer::Reconnecting)) {
-		// If the initial connection failed, QMqttClient might fail
-		// to emit the state change correctly.  Force it,
-		// but use a queued connection to avoid the possibility
-		// that the state change signal gets emitted after the
-		// error change signal.
-		QMetaObject::invokeMethod(this, [this] {
-			onStateChanged(QMqttClient::Disconnected);
-		}, Qt::QueuedConnection);
-	}
 }
 
 void VeQItemMqttProducer::onStateChanged(QMqttClient::ClientState state)
 {
-	if (mMqttConnection && mMqttConnection->state() == QMqttClient::Disconnected
-			&& (mConnectionState == VeQItemMqttProducer::Connecting
-				|| mConnectionState == VeQItemMqttProducer::Reconnecting)) {
-		// if the connection attempt failed, trigger our normal onDisconnected handler.
-		onDisconnected();
-	}
+	// nothing to do.  we only care about connected/disconnected which is handled separately.
 }
 
 void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMqttTopicName &topic)
@@ -432,13 +657,13 @@ void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMq
 			const QJsonObject payload = QJsonDocument::fromJson(message).object();
 			if (parts.length() == 5 && parts[1] == payload.value(QStringLiteral("value")).toString()) {
 				setPortalId(parts[1]);
-				mMqttConnection->unsubscribe(QStringLiteral("N/+/system/0/Serial"));
-				QObject::disconnect(mMqttConnection, &QMqttClient::messageReceived,
-					this, &VeQItemMqttProducer::onMessageReceived);
-				mMqttSubscription = mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
-				QObject::connect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
-					this, &VeQItemMqttProducer::onSubscriptionMessageReceived, Qt::UniqueConnection);
-				doKeepAlive();
+				enqueueStateTransition({
+					QStringLiteral("onMessageReceived"),
+					mConnectionState,
+					Identified,
+					false, // don't set error.
+					QMqttClient::NoError
+				});
 			} else {
 				qWarning() << "VeQItemMqttProducer::onMessageReceived(): portal id mismatch: "
 					<< topicName << " -> " << QString::fromUtf8(message);
@@ -453,15 +678,23 @@ void VeQItemMqttProducer::onSubscriptionMessageReceived(const QMqttMessage &mess
 	// Remain in this state while we wait for the flurry of initial messages to end.
 	// The broker should tell us (with "full_publish_completed" topic message) when
 	// we can transition to "Ready" state.
-	if (!mReceivedMessage) {
-		mReceivedMessage = true;
-		setConnectionState(VeQItemMqttProducer::Initializing);
-		// we will transition to Ready state after some time
-		// even if we are still receiving initial messages,
-		// just in case the broker forgets to send us the Ready message.
-		mReadyStateFallbackTimer->start();
+	if (mConnectionState == Identified) {
+		enqueueStateTransition({
+			QStringLiteral("onSubscriptionMessageReceived"),
+			Identified,
+			Initializing,
+			false, // don't set error.
+			QMqttClient::NoError
+		});
 	}
 
+	// since the state transition (to Initializing) is queued,
+	// we need to handle the message in a queued handler also.
+	QMetaObject::invokeMethod(this, [this, message] { handleMessage(message); }, Qt::QueuedConnection);
+}
+
+void VeQItemMqttProducer::handleMessage(const QMqttMessage &message)
+{
 	const QString topicName(message.topic().name());
 	const QString notificationPrefix = QStringLiteral("N/%1").arg(mPortalId);
 	if (topicName.startsWith(notificationPrefix)) {
@@ -470,13 +703,17 @@ void VeQItemMqttProducer::onSubscriptionMessageReceived(const QMqttMessage &mess
 		const QString readyTopic = notificationPrefix + QStringLiteral("/full_publish_completed");
 		if (topicName.compare(keepaliveTopic, Qt::CaseInsensitive) == 0) {
 			// ignore keepalive topic.
-		} else if (topicName.compare(readyTopic, Qt::CaseInsensitive) == 0 && !mFullPublishReceived) {
+		} else if (mConnectionState == Initializing && topicName.compare(readyTopic, Qt::CaseInsensitive) == 0) {
 			const QJsonObject payload = QJsonDocument::fromJson(message.payload()).object();
 			if (payload.value(QStringLiteral("full-publish-completed-echo")).toString() == mFullPublishCompletedEcho) {
-				mFullPublishReceived = true;
-				if (connectionState() == VeQItemMqttProducer::Initializing) {
-					setConnectionState(VeQItemMqttProducer::Ready);
-				}
+				// The broker has finished sending us the initial messages.  Transition to Ready state.
+				enqueueStateTransition({
+					QStringLiteral("handleMessage"),
+					Initializing,
+					Ready,
+					false, // don't set error.
+					QMqttClient::NoError
+				});
 			}
 		} else if (topicName.compare(heartbeatTopic, Qt::CaseInsensitive) == 0) {
 			// (re)start our heartbeat timer.
@@ -523,9 +760,9 @@ void VeQItemMqttProducer::parseMessage(const QString &path, const QByteArray &me
 }
 
 // The initial keepAlive sent immediately after subscribing to "N/portalId/#"
-// should have an empty message payload.
+// should request a full_publish_completed message when broker has sent all initial messages.
 // Periodic keepAlive messages sent every 30 seconds thereafter should
-// have the payload: { "keepalive-options" : ["suppress-republish"] }
+// suppress republish of non-changed values.
 void VeQItemMqttProducer::doKeepAlive(bool suppressRepublish)
 {
 	if (mMqttConnection
@@ -539,22 +776,18 @@ void VeQItemMqttProducer::doKeepAlive(bool suppressRepublish)
 		// So, handle it here, instead.
 		if (mWebSocket && !mWebSocket->isOpen()) {
 			qWarning() << "Unable to send keepalive due to websocket disconnection";
-			onDisconnected();
+			onDisconnected(); // manually trigger state change to disconnected state.
 			return;
 		}
 #endif
 		if (!suppressRepublish) {
 			// initial keep-alive.
-			if (mIsVrmBroker && !mFullPublishReceived) {
-				// see the related topic N/<portal_id>/full_publish_completed
-				const quint64 uniqueId = QRandomGenerator::global()->generate64();
-				mFullPublishCompletedEcho = QStringLiteral("%1").arg(uniqueId, 16, 16, QLatin1Char('0'));
-				mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)),
-						QStringLiteral("{ \"keepalive-options\" : [ { \"full-publish-completed-echo\": \"%1\" } ] }")
+			// see the related topic N/<portal_id>/full_publish_completed
+			const quint64 uniqueId = QRandomGenerator::global()->generate64();
+			mFullPublishCompletedEcho = QStringLiteral("%1").arg(uniqueId, 16, 16, QLatin1Char('0'));
+			mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)),
+					QStringLiteral("{ \"keepalive-options\" : [ { \"full-publish-completed-echo\": \"%1\" } ] }")
 							.arg(mFullPublishCompletedEcho).toUtf8());
-			} else {
-				mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)));
-			}
 			mKeepAliveTimer->start();
 		} else {
 			mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)),
@@ -585,7 +818,7 @@ void VeQItemMqttProducer::setConnectionState(VeQItemMqttProducer::ConnectionStat
 {
 	if (mConnectionState != connectionState) {
 		mConnectionState = connectionState;
-		emit connectionStateChanged();
+		Q_EMIT connectionStateChanged();
 	}
 }
 
@@ -598,7 +831,7 @@ void VeQItemMqttProducer::setError(QMqttClient::ClientError error)
 {
 	if (mError != error) {
 		mError = error;
-		emit errorChanged();
+		Q_EMIT errorChanged();
 	}
 }
 
@@ -611,7 +844,7 @@ void VeQItemMqttProducer::setPortalId(const QString &portalId)
 {
 	if (mPortalId != portalId) {
 		mPortalId = portalId;
-		emit portalIdChanged();
+		Q_EMIT portalIdChanged();
 	}
 }
 
@@ -644,26 +877,39 @@ bool VeQItemMqttProducer::requestValue(const QString &uid)
 	return true;
 }
 
+#ifdef MQTT_WEBSOCKETS_ENABLED
+void VeQItemMqttProducer::onSocketConnected()
+{
+	enqueueStateTransition({
+			QStringLiteral("onSocketConnected"),
+			mConnectionState,
+			mConnectionState == TransportConnecting ? TransportConnected : TransportReconnected,
+			false, // don't set error.
+			QMqttClient::NoError
+		});
+}
+
+void VeQItemMqttProducer::onSocketDisconnected()
+{
+	// Nothing to do.  The QMqttClient should react to the QIODevice::aboutToClose().
+}
+#endif // MQTT_WEBSOCKETS_ENABLED
+
 //--
 
 #ifdef MQTT_WEBSOCKETS_ENABLED
+#include <QtWebSockets/qwebsockethandshakeoptions.h>
 WebSocketDevice::WebSocketDevice(QObject *parent)
 	: QIODevice(parent)
 {
-	connect(&mWebSocket, &QWebSocket::stateChanged,
-		this, [this] {
-			if (mWebSocket.state() == QAbstractSocket::ClosingState) {
-				if (isOpen()) {
-					QIODevice::close();
-				}
-			} else if (mWebSocket.state() == QAbstractSocket::UnconnectedState) {
-				Q_EMIT disconnected();
-			}
-		});
+	//connect(&mWebSocket, &QWebSocket::stateChanged,
+	//	this, [this] {
+	//		qDebug() << "WebSocket::onStateChanged: " << mWebSocket.state();
+	//	});
 	connect(&mWebSocket, &QWebSocket::connected,
-		this, &WebSocketDevice::connected);
+		this, &WebSocketDevice::onSocketConnected);
 	connect(&mWebSocket, &QWebSocket::disconnected,
-		this, &WebSocketDevice::disconnected);
+		this, &WebSocketDevice::onSocketDisconnected);
 	connect(&mWebSocket, &QWebSocket::binaryMessageReceived,
 		this, &WebSocketDevice::onBinaryMessageReceived);
 }
@@ -672,7 +918,7 @@ void WebSocketDevice::setUrl(const QUrl &url)
 {
 	if (mUrl != url) {
 		mUrl = url;
-		emit urlChanged();
+		Q_EMIT urlChanged();
 	}
 }
 
@@ -685,7 +931,7 @@ void WebSocketDevice::setProtocol(const QByteArray &protocol)
 {
 	if (mProtocol != protocol) {
 		mProtocol = protocol;
-		emit protocolChanged();
+		Q_EMIT protocolChanged();
 	}
 }
 
@@ -701,19 +947,22 @@ bool WebSocketDevice::isValid() const
 
 bool WebSocketDevice::open(QIODeviceBase::OpenMode mode)
 {
-	// FIXME: Qt 6.4 supports websocket subprotocols, but until then...
-	QNetworkRequest r;
-	r.setUrl(mUrl);
-	r.setRawHeader("Sec-WebSocket-Protocol", mProtocol.constData());
-	mWebSocket.open(r);
+	QWebSocketHandshakeOptions options;
+	options.setSubprotocols(QStringList { QString::fromUtf8(mProtocol) });
+	mWebSocket.open(mUrl, options);
 	return QIODevice::open(mode);
 }
 
 void WebSocketDevice::close()
 {
-	if (mWebSocket.isValid())
+	mClosing = true;
+	if (mWebSocket.isValid()) {
 		mWebSocket.close();
-	QIODevice::close();
+	}
+	if (isOpen()) {
+		QIODevice::close();
+	}
+	mClosing = false;
 }
 
 qint64 WebSocketDevice::readData(char *data, qint64 maxSize)
@@ -729,12 +978,6 @@ qint64 WebSocketDevice::writeData(const char *data, qint64 maxSize)
 	return mWebSocket.sendBinaryMessage(QByteArray(data, maxSize));
 }
 
-void WebSocketDevice::onBinaryMessageReceived(const QByteArray &message)
-{
-	mData.append(message);
-	emit readyRead();
-}
-
 qint64 WebSocketDevice::bytesAvailable() const
 {
 	return mData.size() + QIODevice::bytesAvailable();
@@ -743,6 +986,31 @@ qint64 WebSocketDevice::bytesAvailable() const
 bool WebSocketDevice::isSequential() const
 {
 	return true;
+}
+
+void WebSocketDevice::onSocketConnected()
+{
+	if (!mConnected) {
+		mConnected = true;
+		Q_EMIT connected();
+	}
+}
+
+void WebSocketDevice::onSocketDisconnected()
+{
+	if (mConnected) {
+		mConnected = false;
+		if (!mClosing) {
+			close();
+		}
+		Q_EMIT disconnected();
+	}
+}
+
+void WebSocketDevice::onBinaryMessageReceived(const QByteArray &message)
+{
+	mData.append(message);
+	Q_EMIT readyRead();
 }
 #endif // MQTT_WEBSOCKETS_ENABLED
 

@@ -3,9 +3,16 @@
 #include <QObject>
 #include <QString>
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <qqmlintegration.h>
+#endif
+
 class GensetError : public QObject
 {
 	Q_OBJECT
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QML_ELEMENT
+#endif
 
 public:
 	Q_INVOKABLE QString description(QString errorId, int nrOfPhases) { return GensetError::getDescription(errorId, nrOfPhases); }

@@ -73,6 +73,7 @@ public:
 		CanProfileNone250,
 		CanProfileRvC,
 		CanProfileHighVoltage,
+		CanProfileNone500
 	};
 
 	CanBusProfile(int bitrate, QObject *parent = 0);

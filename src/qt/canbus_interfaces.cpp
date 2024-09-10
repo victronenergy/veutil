@@ -63,7 +63,7 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 	profile->addService(motordrive);
 	mProfiles.append(profile);
 
-	// Debug, bring up the interface, but not the services
+	// Debug, bring up the interface (250kbit), but not the services
 	profile = new CanBusProfile(250000, this);
 	mProfiles.append(profile);
 
@@ -73,6 +73,10 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 
 	profile = new CanBusProfile(500000, this);
 	profile->addService(hvCanBus);
+	mProfiles.append(profile);
+
+	// Debug, bring up the interface (500kbit), but not the services
+	profile = new CanBusProfile(500000, this);
 	mProfiles.append(profile);
 
 	VeQItem *item = settings->add(QString("Canbus/%1/Profile").arg(interface),

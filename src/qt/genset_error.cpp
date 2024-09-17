@@ -800,9 +800,9 @@ QString Hatz::getDescription(QString errorId)
 	case SpnAndFmiToNumber( 190,  1): result += tr("Speed higher than expected"); break;
 	case SpnAndFmiToNumber( 190, 15): result += tr("Overspeed"); break;
 	case SpnAndFmiToNumber( 175, 15): /* Fall-through */
-	case SpnAndFmiToNumber( 175, 16): result += tr("Oiltemperature higher than expected"); break;
-	case SpnAndFmiToNumber( 175,  3): result += tr("Oiltemperature open circuit / short to power"); break;
-	case SpnAndFmiToNumber( 175,  4): result += tr("Oiltemperature short to ground"); break;
+	case SpnAndFmiToNumber( 175, 16): result += tr("Oil temperature higher than expected"); break;
+	case SpnAndFmiToNumber( 175,  3): result += tr("Oil temperature open circuit / short to power"); break;
+	case SpnAndFmiToNumber( 175,  4): result += tr("Oil temperature short to ground"); break;
 	case SpnAndFmiToNumber(  91,  3): result += tr("Analog setpoint high / short to power"); break;
 	case SpnAndFmiToNumber(  91,  4): result += tr("Analog setpoint low / short to ground"); break;
 	case SpnAndFmiToNumber( 695,  9): result += tr("TSC1 message receive timeout"); break;

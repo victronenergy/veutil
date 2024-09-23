@@ -285,29 +285,17 @@ void VeQItemMqttProducer::transitionState()
 	if (haveTransition) {
 		// transition to the appropriate state, then perform side effects
 		// associated with that state.
+		// qDebug() << "Transitioning from" << mConnectionState << " to " << transition.to;
 		setConnectionState(transition.to);
 		switch (transition.to) {
 			case Idle: {
 				stop();
-				if (mMqttConnection) {
-					mMqttConnection->disconnectFromHost();
-					mMqttConnection->deleteLater();
-					mMqttConnection = nullptr;
-				}
-#ifdef MQTT_WEBSOCKETS_ENABLED
-				if (mWebSocket) {
-					mWebSocket->deleteLater();
-					mWebSocket = nullptr;
-				}
-#endif
+				deleteMqttConnection();
 				break;
 			}
 
 			case WaitingToConnect: {
-				if (mMqttConnection) {
-					mMqttConnection->disconnectFromHost();
-					mMqttConnection->deleteLater();
-				}
+				deleteMqttConnection();
 				mMqttConnection = new QMqttClient(this);
 				mMqttConnection->setClientId(mClientId);
 				if (!mHostName.isEmpty()) {
@@ -342,7 +330,7 @@ void VeQItemMqttProducer::transitionState()
 #else
 							mConnectionState == WaitingToConnect ? Connecting : Reconnecting,
 #endif
-							false, // don't set error.
+							true, // clear any error from prior connection attempts.
 							QMqttClient::NoError
 						});
 					});
@@ -353,10 +341,9 @@ void VeQItemMqttProducer::transitionState()
 			case TransportConnecting: // fall through
 			case TransportReconnecting: {
 #ifdef MQTT_WEBSOCKETS_ENABLED
-				if (mWebSocket) {
-					mWebSocket->deleteLater();
-				}
-
+				// Note: the qDebug() seems to prevent a problem on Firefox which prevents reconnect.
+				qDebug() << "TransportConnecting, MQTT connection is: " << mMqttConnection->state();
+				deleteWebSocket();
 				mWebSocket = new WebSocketDevice(this);
 				mWebSocket->setUrl(mUrl);
 				mWebSocket->setProtocol( mProtocolVersion == QMqttClient::MQTT_3_1
@@ -367,7 +354,10 @@ void VeQItemMqttProducer::transitionState()
 				connect(mWebSocket, &WebSocketDevice::connected,
 					this, &VeQItemMqttProducer::onSocketConnected);
 
-				mWebSocket->open(QIODeviceBase::ReadWrite);
+				if (!mWebSocket->open(QIODeviceBase::ReadWrite)) {
+					qWarning() << "Failed to open websocket to attempt to connect!";
+					onSocketDisconnected(); // manually trigger failure codepath.
+				}
 #else
 				Q_ASSERT_X(true, "MQTT producer", "Invalid transport connecting state in non-websockets build");
 #endif
@@ -377,8 +367,11 @@ void VeQItemMqttProducer::transitionState()
 			case TransportConnected: // fall through
 			case TransportReconnected: {
 #ifdef MQTT_WEBSOCKETS_ENABLED
+				// Note: the qDebug() seems to prevent a problem on Firefox which prevents reconnect.
+				qDebug() << "TransportConnected, MQTT connection is: " << mMqttConnection->state();
+				// websocket has connected, now establish MQTT connection.
 				mMqttConnection->setProtocolVersion(mProtocolVersion);
-				mMqttConnection->setTransport(mWebSocket, QMqttClient::IODevice);
+				setMqttConnectionTransport();
 				enqueueStateTransition({
 					mConnectionState == TransportConnected ? QStringLiteral("TransportConnected") : QStringLiteral("TransportReconnected"),
 					mConnectionState,
@@ -427,6 +420,7 @@ void VeQItemMqttProducer::transitionState()
 				QObject::connect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
 					this, &VeQItemMqttProducer::onSubscriptionMessageReceived, Qt::UniqueConnection);
 				doKeepAlive(/* suppressRepublish = */ false);
+				break;
 			}
 
 			case Initializing: {
@@ -446,10 +440,7 @@ void VeQItemMqttProducer::transitionState()
 			case Disconnected: {
 				stop();
 #ifdef MQTT_WEBSOCKETS_ENABLED
-				if (mWebSocket) {
-					mWebSocket->deleteLater();
-					mWebSocket = nullptr;
-				}
+				deleteWebSocket();
 #endif
 				if (mAutoReconnectAttemptCounter < mAutoReconnectMaxAttempts) {
 					// Attempt to reconnect.  We use a staggered exponential backoff interval.
@@ -476,11 +467,6 @@ void VeQItemMqttProducer::transitionState()
 			case Failed: {
 				// Wait one minute and then start the connection process again.
 				mAutoReconnectAttemptCounter = 0;
-				if (mMqttConnection) {
-					mMqttConnection->disconnectFromHost();
-					mMqttConnection->deleteLater();
-					mMqttConnection = nullptr;
-				}
 				QTimer::singleShot(
 					60000,
 					this, [this] {
@@ -492,6 +478,18 @@ void VeQItemMqttProducer::transitionState()
 							QMqttClient::NoError
 						});
 					});
+
+				// On WebAssembly, the QMqttClient state can get
+				// messed up.  Work around this.
+				if (mMqttConnection) {
+					stop();
+					QTimer::singleShot(
+						1000,
+						this, [this] {
+							qDebug() << "Deleting MQTT connection prior to retry in 60s";
+							deleteMqttConnection();
+						});
+				}
 				break;
 			}
 
@@ -877,6 +875,34 @@ bool VeQItemMqttProducer::requestValue(const QString &uid)
 	return true;
 }
 
+void VeQItemMqttProducer::deleteMqttConnection()
+{
+	if (mMqttSubscription.data()) {
+		mMqttSubscription->unsubscribe();
+		QObject::disconnect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
+			this, &VeQItemMqttProducer::onSubscriptionMessageReceived);
+		mMqttSubscription.clear();
+	}
+	if (mMqttConnection) {
+		disconnect(mMqttConnection, nullptr, this, nullptr);
+		mMqttConnection->disconnectFromHost();
+		mMqttConnection->deleteLater();
+		mMqttConnection = nullptr;
+	}
+#ifdef MQTT_WEBSOCKETS_ENABLED
+	if (mCleanupWebSocket) {
+		mCleanupWebSocket->deleteLater();
+		mCleanupWebSocket = nullptr;
+	}
+	if (mWebSocket) {
+		disconnect(mWebSocket, nullptr, this, nullptr);
+		mWebSocket->close();
+		mWebSocket->deleteLater();
+		mWebSocket = nullptr;
+	}
+#endif
+}
+
 #ifdef MQTT_WEBSOCKETS_ENABLED
 void VeQItemMqttProducer::onSocketConnected()
 {
@@ -891,7 +917,56 @@ void VeQItemMqttProducer::onSocketConnected()
 
 void VeQItemMqttProducer::onSocketDisconnected()
 {
-	// Nothing to do.  The QMqttClient should react to the QIODevice::aboutToClose().
+	// In Connected state there is nothing to do:
+	// the QMqttClient should react to the QIODevice::aboutToClose().
+	// But, if we receive this signal during Connecting state,
+	// we need to manually handle the state transition,
+	// as it means that the websocket was unable to connect.
+	if (mConnectionState == TransportConnecting
+			|| mConnectionState == TransportReconnecting) {
+		enqueueStateTransition({
+				QStringLiteral("onSocketDisconnected"),
+				mConnectionState,
+				Disconnected,
+				true, // set error.
+				QMqttClient::TransportInvalid
+			});
+	}
+}
+
+// QMqttClient doesn't properly guard all accesses to its transport,
+// so we cannot set it to nullptr if we need to delete the WebSocket.
+// Thus, we cannot fully delete an old WebSocket if we have set it
+// as the transport for the QMqttClient, until we set the new transport.
+// So, keep the old websocket pointer around and delete it when we can.
+void VeQItemMqttProducer::setMqttConnectionTransport()
+{
+	mMqttConnection->setTransport(mWebSocket, QMqttClient::IODevice);
+	if (mCleanupWebSocket) {
+		mCleanupWebSocket->deleteLater();
+		mCleanupWebSocket = nullptr;
+	}
+}
+void VeQItemMqttProducer::deleteWebSocket()
+{
+	if (mWebSocket) {
+		if (mCleanupWebSocket) {
+			// the current mWebSocket hasn't yet been set as the
+			// transport for the QMqttConnection, so we can
+			// just delete it directly.
+			disconnect(mWebSocket, nullptr, this, nullptr);
+			mWebSocket->close();
+			mWebSocket->deleteLater();
+		} else {
+			// the mWebSocket has been set as the transport.
+			// we cannot delete it, until we set a new one
+			// as the transport of the QMqttClient.
+			mCleanupWebSocket = mWebSocket;
+			disconnect(mCleanupWebSocket, nullptr, this, nullptr);
+			mCleanupWebSocket->close();
+		}
+		mWebSocket = nullptr;
+	}
 }
 #endif // MQTT_WEBSOCKETS_ENABLED
 
@@ -947,22 +1022,28 @@ bool WebSocketDevice::isValid() const
 
 bool WebSocketDevice::open(QIODeviceBase::OpenMode mode)
 {
+	if (mState != QAbstractSocket::UnconnectedState) {
+		return false;
+	}
+
 	QWebSocketHandshakeOptions options;
 	options.setSubprotocols(QStringList { QString::fromUtf8(mProtocol) });
 	mWebSocket.open(mUrl, options);
-	return QIODevice::open(mode);
+	const bool opening = QIODevice::open(mode);
+	mState = opening ? QAbstractSocket::ConnectingState : QAbstractSocket::UnconnectedState;
+	return opening;
 }
 
 void WebSocketDevice::close()
 {
-	mClosing = true;
+	mState = QAbstractSocket::ClosingState;
 	if (mWebSocket.isValid()) {
 		mWebSocket.close();
 	}
 	if (isOpen()) {
 		QIODevice::close();
 	}
-	mClosing = false;
+	mState = QAbstractSocket::UnconnectedState;
 }
 
 qint64 WebSocketDevice::readData(char *data, qint64 maxSize)
@@ -990,19 +1071,17 @@ bool WebSocketDevice::isSequential() const
 
 void WebSocketDevice::onSocketConnected()
 {
-	if (!mConnected) {
-		mConnected = true;
+	if (mState != QAbstractSocket::ConnectedState) {
+		mState = QAbstractSocket::ConnectedState;
 		Q_EMIT connected();
 	}
 }
 
 void WebSocketDevice::onSocketDisconnected()
 {
-	if (mConnected) {
-		mConnected = false;
-		if (!mClosing) {
-			close();
-		}
+	if (mState == QAbstractSocket::ConnectingState
+			|| mState == QAbstractSocket::ConnectedState) {
+		close();
 		Q_EMIT disconnected();
 	}
 }

@@ -34,8 +34,8 @@ public:
 
 	int setValue(QVariant const &value) override;
 
-    QVariant getValue() override;
-    QVariant getValue(bool force) override;
+	QVariant getValue() override;
+	QVariant getValue(bool force) override;
 
 protected:
 	void setParent(QObject *parent) override;
@@ -154,6 +154,7 @@ private:
 	void handleMessage(const QMqttMessage &message);
 	void parseMessage(const QString &path, const QByteArray &message);
 	void stop();
+	void deleteMqttConnection();
 
 	QTimer *mKeepAliveTimer;
 	QTimer *mHeartBeatTimer;
@@ -161,7 +162,10 @@ private:
 	QMqttClient *mMqttConnection;
 	QPointer<QMqttSubscription> mMqttSubscription;
 #ifdef MQTT_WEBSOCKETS_ENABLED
+	void setMqttConnectionTransport();
+	void deleteWebSocket();
 	WebSocketDevice *mWebSocket = nullptr;
+	WebSocketDevice *mCleanupWebSocket = nullptr;
 #endif // MQTT_WEBSOCKETS_ENABLED
 	QString mFullPublishCompletedEcho;
 	QString mClientId;
@@ -220,8 +224,7 @@ private:
 	QByteArray mProtocol;
 	QByteArray mData;
 	QWebSocket mWebSocket;
-	bool mConnected = false;
-	bool mClosing = false;
+	QAbstractSocket::SocketState mState = QAbstractSocket::UnconnectedState;
 };
 #endif // MQTT_WEBSOCKETS_ENABLED
 

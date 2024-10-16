@@ -20,6 +20,8 @@ const VeChargerError ChargerError::errors[] =
 	{ CHARGER_ERROR_BATTERY_LOW_SOC,						QT_TR_NOOP("Battery low state of charge") },
 	{ CHARGER_ERROR_BATTERY_MIDPOINT_VOLTAGE,				QT_TR_NOOP("Battery mid-point voltage issue") },
 	{ CHARGER_ERROR_BATTERY_TEMP_TOO_LOW,					QT_TR_NOOP("Battery temperature too low") },
+	{ CHARGER_ERROR_BATTERY_RELAY_FAULT,					QT_TR_NOOP("Battery relay fault") },
+	{ CHARGER_ERROR_BATTERY_NOT_FOUND,						QT_TR_NOOP("Battery not found") },
 
 	{ CHARGER_ERROR_CHARGER_TEMP_TOO_HIGH,					QT_TR_NOOP("Charger high temperature") },
 	{ CHARGER_ERROR_CHARGER_OVER_CURRENT,					QT_TR_NOOP("Charger excessive current") },
@@ -107,6 +109,11 @@ const VeChargerError ChargerError::errors[] =
 	{ CHARGER_ERROR_CHARGER_TEMP_TOO_HIGH_WARN,				QT_TR_NOOP("Charger high temperature") },
 	{ CHARGER_ERROR_CHARGER_SHORT_CIRCUIT_WARN,				QT_TR_NOOP("Charger short circuit") },
 	{ CHARGER_ERROR_CHARGER_CONVERTER_ISSUE_WARN,			QT_TR_NOOP("Charger power stage issue") },
+
+	{ CHARGER_ERROR_PRECHARGE_FAILED,						QT_TR_NOOP("Charger pre-charge failed") },
+	{ CHARGER_ERROR_SOLAR_RELAY_FAULT,						QT_TR_NOOP("Charger solar relay failed") },
+	{ CHARGER_ERROR_SOLAR_SHORT,							QT_TR_NOOP("Charger solar short") },
+	{ CHARGER_ERROR_SOLAR_CONNECT_FAILED,					QT_TR_NOOP("Charger solar connect failed") },
 };
 
 ChargerError::ChargerError()

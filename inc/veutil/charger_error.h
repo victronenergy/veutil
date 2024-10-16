@@ -19,8 +19,8 @@
 #define CHARGER_ERROR_BATTERY_LOW_SOC						12	/*!< Error   / Battery low state of charge */
 #define CHARGER_ERROR_BATTERY_MIDPOINT_VOLTAGE				13	/*!< Error   / Battery mid-point voltage issue */
 #define CHARGER_ERROR_BATTERY_TEMP_TOO_LOW					14	/*!< Error   / Battery temperature too low */
-#define CHARGER_ERROR_15									15  /*!< free */
-#define CHARGER_ERROR_16									16  /*!< free */
+#define CHARGER_ERROR_BATTERY_RELAY_FAULT					15  /*!< Error   / Battery Relay fault */
+#define CHARGER_ERROR_BATTERY_NOT_FOUND						16  /*!< Error   / No Battery */
 #define CHARGER_ERROR_CHARGER_TEMP_TOO_HIGH					17	/*!< Error   / Charger temperature too high */
 #define CHARGER_ERROR_CHARGER_OVER_CURRENT					18	/*!< Error   / Charger excessive current */
 #define CHARGER_ERROR_CHARGER_CURRENT_REVERSED				19	/*!< Error   / Changer current polarity reversed */
@@ -184,7 +184,7 @@
 #define CHARGER_ERROR_177									177 /*!< free */
 #define CHARGER_ERROR_178									178 /*!< free */
 #define CHARGER_ERROR_179									179 /*!< free */
-#define CHARGER_ERROR_180									180 /*!< free */
+#define CHARGER_ERROR_PRECHARGE_FAILED						180 /*!< ERROR  / Pre-charge unsuccessful */
 #define CHARGER_ERROR_181									181 /*!< free */
 #define CHARGER_ERROR_182									182 /*!< free */
 #define CHARGER_ERROR_183									183 /*!< free */
@@ -224,9 +224,9 @@
 #define CHARGER_ERROR_217									217 /*!< free */
 #define CHARGER_ERROR_218									218 /*!< free */
 #define CHARGER_ERROR_219									219 /*!< free */
-#define CHARGER_ERROR_220									220 /*!< free */
-#define CHARGER_ERROR_221									221 /*!< free */
-#define CHARGER_ERROR_222									222 /*!< free */
+#define CHARGER_ERROR_SOLAR_RELAY_FAULT						220 /*!< Error  / Solar relay fault */
+#define CHARGER_ERROR_SOLAR_SHORT							221 /*!< Error  / Solar short protection enabled */
+#define CHARGER_ERROR_SOLAR_CONNECT_FAILED					222 /*!< Error  / connection failed */
 #define CHARGER_ERROR_223									223 /*!< free */
 #define CHARGER_ERROR_224									224 /*!< free */
 #define CHARGER_ERROR_225									225 /*!< free */

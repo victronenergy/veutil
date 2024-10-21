@@ -61,7 +61,6 @@ const VeChargerError ChargerError::errors[] =
 	{ CHARGER_ERROR_INVERTER_BRIDGE_FAULT,					QT_TR_NOOP("Inverter powerstage fault") },
 	{ CHARGER_ERROR_ACIN1_RELAY_FAULT,						QT_TR_NOOP("ACIN1 relay test fault") },
 	{ CHARGER_ERROR_ACIN2_RELAY_FAULT,						QT_TR_NOOP("ACIN2 relay test fault") },
-	{ CHARGER_ERROR_ENERGY_METER_MISSING,					QT_TR_NOOP("Energy meter missing") },
 
 	{ CHARGER_ERROR_LINK_DEVICE_MISSING,					QT_TR_NOOP("Device disappeared") },
 	{ CHARGER_ERROR_LINK_CONFIGURATION,						QT_TR_NOOP("Incompatible device") },
@@ -136,7 +135,6 @@ bool ChargerError::isWarning(int error)
 {
 	return error == CHARGER_ERROR_LINK_DEVICE_MISSING ||
 		error == CHARGER_ERROR_LINK_CONFIGURATION ||
-		error == CHARGER_ERROR_ENERGY_METER_MISSING ||
 		error == CHARGER_ERROR_BATTERY_TEMP_TOO_LOW ||
 		error == CHARGER_ERROR_BATTERY_TEMP_TOO_HIGH_WARN ||
 		error == CHARGER_ERROR_BATTERY_TEMP_TOO_LOW_WARN ||

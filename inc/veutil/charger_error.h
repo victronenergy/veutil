@@ -65,7 +65,7 @@
 #define CHARGER_ERROR_INVERTER_BRIDGE_FAULT					58	/*!< Error   / Inverter bridge fault (hardware signal) */
 #define CHARGER_ERROR_ACIN1_RELAY_FAULT						59  /*!< Error   / Multi ACIN1 relay test fault */
 #define CHARGER_ERROR_ACIN2_RELAY_FAULT						60  /*!< Error   / Multi ACIN2 relay test fault */
-#define CHARGER_ERROR_ENERGY_METER_MISSING					61  /*!< Warning / Energy meter is required but no data is received */
+#define CHARGER_ERROR_61									61  /*!< free */
 #define CHARGER_ERROR_62									62  /*!< free */
 #define CHARGER_ERROR_63									63  /*!< free */
 #define CHARGER_ERROR_64									64  /*!< free */

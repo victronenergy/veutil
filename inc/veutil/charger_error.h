@@ -79,7 +79,7 @@
 #define CHARGER_ERROR_LINK_PHASE_ROTATION					72  /*!< Error   / Phase rotation */
 #define CHARGER_ERROR_LINK_MULTIPLE_AC_INPUTS				73  /*!< Error   / Multiple AC inputs */
 #define CHARGER_ERROR_LINK_PHASE_OVERLOAD					74  /*!< Error   / Phase overload */
-#define CHARGER_ERROR_75									75  /*!< free */
+#define CHARGER_ERROR_LINK_CONFIG_NOT_SUPPORTED				75  /*!< Error   / Network misconfigured */
 #define CHARGER_ERROR_76									76  /*!< free */
 #define CHARGER_ERROR_77									77  /*!< free */
 #define CHARGER_ERROR_78									78  /*!< free */

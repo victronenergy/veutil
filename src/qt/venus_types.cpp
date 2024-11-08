@@ -24,6 +24,9 @@ VenusServiceType venusServiceType(const QString &serviceName)
 	if (type == "multi")
 		return VenusServiceType::MULTI_RS;
 
+	if (type == "acsystem")
+		return VenusServiceType::AC_SYSTEM;
+
 	if (type == "solarcharger")
 		return VenusServiceType::SOLAR_CHARGER;
 

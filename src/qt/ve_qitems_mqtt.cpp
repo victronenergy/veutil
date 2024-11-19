@@ -23,7 +23,11 @@ VeQItemMqtt::VeQItemMqtt(VeQItemMqttProducer *producer)
 				// Problem: QMqttClient doesn't expose the retain flag value...
 				break;
 			case VeQItemMqttProducer::Disconnected:
-				produceValue(QVariant(), VeQItem::Offline);
+				// Update the state to Offline. Only do this for leaf items, as non-leaf items
+				// should never produce values or state changes.
+				if (isLeaf()) {
+					produceValue(QVariant(), VeQItem::Offline);
+				}
 				break;
 			default: break;
 			}

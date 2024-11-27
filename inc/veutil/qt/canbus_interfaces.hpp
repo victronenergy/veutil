@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QTimer>
 #include <veutil/qt/daemontools_service.hpp>
 #include <veutil/qt/ve_qitem_utils.hpp>
 
@@ -127,9 +128,12 @@ public:
 
 private slots:
 	void dbusItemChanged();
+	void onPollTimer();
 
 private:
 	void changeCanBusBitRate(int speed);
+	void checkSpiStats();
+	void checkFailed();
 
 	CanBusProfile *mActiveProfile;
 	QVector<CanBusProfile *> mProfiles;
@@ -137,4 +141,5 @@ private:
 	CanBusConfig mConfig;
 	QString mUiName;
 	VeQItem *mInterfaceItem;
+	QTimer mTimer;
 };

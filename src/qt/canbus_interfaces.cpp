@@ -85,6 +85,10 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 
 	mInterfaceItem = service->itemGetOrCreate("CanBus/Interface/" + interface);
 	mInterfaceItem->itemAddChild("Statistics", new VeQItemCanStats(interface));
+
+	connect(&mTimer, SIGNAL(timeout()), SLOT(onPollTimer()));
+	onPollTimer();
+	mTimer.start(60000);
 }
 
 CanBusProfiles::~CanBusProfiles()
@@ -121,6 +125,62 @@ void CanBusProfiles::dbusItemChanged()
 		changeCanBusBitRate(mActiveProfile->bitrate());
 		mActiveProfile->enableProfile();
 	}
+}
+
+void CanBusProfiles::checkSpiStats()
+{
+
+	QFile statFile("/sys/class/net/" + mInterface + "/spi_stats");
+	if (!statFile.exists() || !statFile.open(QFile::ReadOnly))
+		return;
+	QTextStream in(&statFile);
+	quint64 retries = 0;
+	quint64 transfers = 0;
+	double retryRatio;
+	bool ok;
+
+	for (;;) {
+		QString line = in.readLine();
+		if (line.isNull())
+			break;
+
+		qDebug() << line;
+		QStringList parts = line.split(":", Qt::SkipEmptyParts);
+		if (parts.length() < 2)
+			goto out;
+
+		if (parts[0] == "transfers") {
+			transfers = parts[1].toLongLong(&ok);
+			if (!ok)
+				goto out;
+		} else if (parts[0] == "retries") {
+			retries = parts[1].toLongLong(&ok);
+			if (!ok)
+				goto out;
+		}
+	}
+
+	retryRatio = transfers ? (double) retries * 100 / transfers : 0;
+	mInterfaceItem->itemGetOrCreateAndProduce("SpiRetryPercentage", retryRatio);
+	return;
+
+out:
+	qCritical() << "malformed line in spi_stats";
+}
+
+void CanBusProfiles::checkFailed()
+{
+	QFile failedFile("/sys/class/net/" + mInterface + "/failed");
+	if (!failedFile.exists() || !failedFile.open(QFile::ReadOnly))
+		return;
+	bool failed = failedFile.readLine() == "1";
+	mInterfaceItem->itemGetOrCreateAndProduce("Failed", failed);
+}
+
+void CanBusProfiles::onPollTimer()
+{
+	checkSpiStats();
+	checkFailed();
 }
 
 QVariantMap CanBusProfiles::canInfo() const

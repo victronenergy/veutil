@@ -144,7 +144,6 @@ void CanBusProfiles::checkSpiStats()
 		if (line.isNull())
 			break;
 
-		qDebug() << line;
 		QStringList parts = line.split(":", Qt::SkipEmptyParts);
 		if (parts.length() < 2)
 			goto out;
@@ -173,7 +172,8 @@ void CanBusProfiles::checkFailed()
 	QFile failedFile("/sys/class/net/" + mInterface + "/failed");
 	if (!failedFile.exists() || !failedFile.open(QFile::ReadOnly))
 		return;
-	bool failed = failedFile.readLine() == "1";
+	QString line = failedFile.readLine();
+	bool failed = line.trimmed() == "1";
 	mInterfaceItem->itemGetOrCreateAndProduce("Failed", failed);
 }
 

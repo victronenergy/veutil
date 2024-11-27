@@ -3,6 +3,12 @@
 
 #include <veutil/qt/canbus_interfaces.hpp>
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+ #define SkipEmptyParts Qt::SkipEmptyParts
+#else
+ #define SkipEmptyParts QString::SkipEmptyParts
+#endif
+
 CanBusProfile::CanBusProfile(int bitrate, QObject *parent) :
 	QObject(parent),
 	mBitRate(bitrate)
@@ -144,7 +150,7 @@ void CanBusProfiles::checkSpiStats()
 		if (line.isNull())
 			break;
 
-		QStringList parts = line.split(":", Qt::SkipEmptyParts);
+		QStringList parts = line.split(":", SkipEmptyParts);
 		if (parts.length() < 2)
 			goto out;
 

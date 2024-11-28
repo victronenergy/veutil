@@ -179,7 +179,7 @@ void CanBusProfiles::checkFailed()
 	if (!failedFile.exists() || !failedFile.open(QFile::ReadOnly))
 		return;
 	QString line = failedFile.readLine();
-	bool failed = line.trimmed() == "1";
+	int failed = line.trimmed() == "1";
 	mInterfaceItem->itemGetOrCreateAndProduce("Failed", failed);
 }
 

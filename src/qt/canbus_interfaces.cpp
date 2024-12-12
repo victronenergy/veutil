@@ -173,14 +173,34 @@ out:
 	qCritical() << "malformed line in spi_stats";
 }
 
+enum CanSpiState {
+	CAN_SPI_OK,
+	CAN_SPI_RESTARTED,
+	CAN_SPI_FAILED
+};
+
 void CanBusProfiles::checkFailed()
 {
+	enum CanSpiState canState = CAN_SPI_OK;
+
 	QFile failedFile("/sys/class/net/" + mInterface + "/failed");
 	if (!failedFile.exists() || !failedFile.open(QFile::ReadOnly))
 		return;
-	QString line = failedFile.readLine();
-	int failed = line.trimmed() == "1";
-	mInterfaceItem->itemGetOrCreateAndProduce("Failed", failed);
+
+	if (failedFile.readLine().trimmed() == "1") {
+		canState = CAN_SPI_FAILED;
+	} else {
+		QFile restartFile("/sys/class/net/" + mInterface + "/restarted");
+		if (restartFile.exists() && restartFile.open(QFile::ReadOnly) &&
+				restartFile.readLine().trimmed() == "1")
+			canState = CAN_SPI_RESTARTED;
+	}
+
+	// Since the driver is now restarted in the original failed state, it became
+	// restarted instead. When restarted too often the driver is marked as failed.
+	// The item is not renamed though, so vrmlogger / VRM doesn't need to be changed
+	// to report the value.
+	mInterfaceItem->itemGetOrCreateAndProduce("Failed", canState);
 }
 
 void CanBusProfiles::onPollTimer()

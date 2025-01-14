@@ -133,6 +133,12 @@ SpeedConverter::SpeedConverter() :
 		{ Unit::Knots, new UnitLinear("kt", 0.539957) },
 	}) {}
 
+// Altitude conversions
+AltitudeConverter::AltitudeConverter() :
+	UnitConverter(Unit::Meter, {
+		{ Unit::Meter, new UnitBase("m") },
+		{ Unit::Foot, new UnitLinear("ft", 3.28084) },
+	}) {}
 
 const UnitConverter *UnitConverters::get(Unit::Type unit)
 {

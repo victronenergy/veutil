@@ -37,6 +37,10 @@ public:
 
 		// Rotational Speed
 		RevolutionsPerMinute,
+
+		// Altitude
+		Meter,
+		Foot,
 	};
 };
 
@@ -85,6 +89,11 @@ public:
 	SpeedConverter();
 };
 
+class AltitudeConverter : public UnitConverter {
+public:
+	AltitudeConverter();
+};
+
 // The common one.
 class UnitConverters : public QObject {
 	Q_OBJECT
@@ -100,6 +109,7 @@ public:
 	const TemperatureConverter temperature;
 	const VolumeConverter volume;
 	const SpeedConverter speed;
+	const AltitudeConverter altitude;
 
 	UnitConverter const *get(Unit::Type unit);
 

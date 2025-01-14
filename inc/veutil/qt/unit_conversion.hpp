@@ -28,6 +28,10 @@ public:
 		Litre,
 		ImperialGallon,
 		UsGallon,
+
+		// Altitude
+		Meter,
+		Foot,
 	};
 };
 
@@ -71,6 +75,11 @@ public:
 	VolumeConverter();
 };
 
+class AltitudeConverter : public UnitConverter {
+public:
+	AltitudeConverter();
+};
+
 // The common one.
 class UnitConverters : public QObject {
 	Q_OBJECT
@@ -85,6 +94,7 @@ public:
 
 	const TemperatureConverter temperature;
 	const VolumeConverter volume;
+	const AltitudeConverter altitude;
 
 	UnitConverter const *get(Unit::Type unit);
 

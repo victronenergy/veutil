@@ -124,6 +124,12 @@ VolumeConverter::VolumeConverter() :
 		{ Unit::UsGallon, new UnitLinear("gall", 264.172052) },
 	}) {}
 
+// Altitude conversions
+AltitudeConverter::AltitudeConverter() :
+	UnitConverter(Unit::Meter, {
+		{ Unit::Meter, new UnitBase("m") },
+		{ Unit::Foot, new UnitLinear("ft", 3.28084) },
+	}) {}
 
 const UnitConverter *UnitConverters::get(Unit::Type unit)
 {

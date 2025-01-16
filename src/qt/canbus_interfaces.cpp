@@ -44,7 +44,7 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 	CanBusService *valence = new CanBusService("dbus-valence", interface, this);
 	CanBusService *motordrive = new CanBusService("dbus-motordrive", interface, this);
 	CanBusService *rvc = new CanBusService("dbus-rv-c", interface, this);
-	CanBusService *hvCanBus = new CanBusService("hv-can-bus", interface, this);
+	CanBusService *hvCanBus = new CanBusService("can-bus-bms-hv", interface, this);
 
 	// Disabled profile, without any service
 	CanBusProfile *profile = new CanBusProfile(0, this);

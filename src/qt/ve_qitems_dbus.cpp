@@ -439,6 +439,9 @@ QVariant VeQItemDbus::itemProperty(const char *name, bool force)
 
 void VeQItemDbus::setValueDone(QDBusPendingCallWatcher *call)
 {
+	if (call->error().type() != QDBusError::NoError) {
+		qDebug() << __PRETTY_FUNCTION__ << " call->error().name(): " << call->error().name();
+	}
 	call->deleteLater();
 }
 
@@ -449,16 +452,24 @@ int VeQItemDbus::setValue(const QVariant &value)
 		return -1;
 	}
 
+	bool newValueValid = true;
+	QVariant newValue = (getValue().typeId() == QMetaType::Int && value.typeId() != QMetaType::Int) ? value.toInt(&newValueValid) : value;
+
+	if (!newValueValid) {
+		qWarning() << "cannot convert" << value << "to integer - service may reject value update";
+		newValue = value;
+	}
+
 	// no need to set values to the same again
-	if (mState == Storing && mPendingSetValue == value)
+	if (mState == Storing && mPendingSetValue == newValue)
 		return 0;
 
-	mPendingSetValue = value;
+	mPendingSetValue = newValue;
 	setState(Storing);
 
 	QDBusMessage msg = QDBusMessage::createMethodCall(mDbusService->owner(), dbusPath(), "com.victronenergy.BusItem", "SetValue");
-	if (value.isValid()) {
-		msg << QVariant::fromValue(QDBusVariant(value));
+	if (newValue.isValid()) {
+		msg << QVariant::fromValue(QDBusVariant(newValue));
 	} else {
 		QDBusArgument invalid;
 		invalid.beginArray(qMetaTypeId<int>());

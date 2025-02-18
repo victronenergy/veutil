@@ -440,7 +440,7 @@ QVariant VeQItemDbus::itemProperty(const char *name, bool force)
 void VeQItemDbus::setValueDone(QDBusPendingCallWatcher *call)
 {
 	if (call->error().type() != QDBusError::NoError) {
-		qDebug() << __PRETTY_FUNCTION__ << " call->error().name(): " << call->error().name();
+		qDebug() << Q_FUNC_INFO << " call->error().name(): " << call->error().name();
 	}
 	call->deleteLater();
 }

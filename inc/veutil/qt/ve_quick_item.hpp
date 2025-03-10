@@ -46,7 +46,7 @@ class VE_QITEM_EXPORT VeQuickItem : public QObject {
 	Q_PROPERTY(double defaultSourceMin READ getDefaultSourceMin NOTIFY defaultMinChanged)
 	Q_PROPERTY(double defaultSourceMax READ getDefaultSourceMax NOTIFY defaultMaxChanged)
 	Q_PROPERTY(bool isSetting READ getIsSetting NOTIFY isSettingChanged WRITE setIsSetting)
-	Q_PROPERTY(bool isValid READ getIsValid NOTIFY isValidChanged)
+    Q_PROPERTY(bool valid READ getIsValid NOTIFY isValidChanged)
 	Q_PROPERTY(bool invalidate READ getInvalidate NOTIFY invalidateChanged WRITE setInvalidate)
 
 public:

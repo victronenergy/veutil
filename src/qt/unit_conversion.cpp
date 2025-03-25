@@ -124,6 +124,15 @@ VolumeConverter::VolumeConverter() :
 		{ Unit::UsGallon, new UnitLinear("gall", 264.172052) },
 	}) {}
 
+// Speed conversions
+SpeedConverter::SpeedConverter() :
+	UnitConverter(Unit::KilometersPerHour, {
+		{ Unit::KilometersPerHour, new UnitBase(QString::fromUtf8("km/h")) },
+		{ Unit::MilesPerHour, new UnitLinear("mph", 0.621371) },
+		{ Unit::MetresPerSecond, new UnitLinear("m/s", 0.277778) },
+		{ Unit::Knots, new UnitLinear("kt", 0.539957) },
+	}) {}
+
 
 const UnitConverter *UnitConverters::get(Unit::Type unit)
 {

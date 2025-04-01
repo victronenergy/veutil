@@ -214,20 +214,20 @@ private:
 	{
 		mItem->getValueAndChanges(this, SLOT(onValueChanged()));
 
-		connect(mItem, SIGNAL(stateChanged(VeQItem::State)), SIGNAL(stateChanged()));
+		connect(mItem, SIGNAL(stateChanged(VeQItem::State)), SIGNAL(stateChanged()), Qt::QueuedConnection);
 		emit stateChanged();
 
 		if (mTextMode == TextMode::FromItem) {
-			connect(mItem, SIGNAL(textChanged(QString)), SIGNAL(textChanged()));
+			connect(mItem, SIGNAL(textChanged(QString)), SIGNAL(textChanged()), Qt::QueuedConnection);
 			emit textChanged();
 		}
 
-		connect(mItem, SIGNAL(seenChanged()), SIGNAL(seenChanged()));
+		connect(mItem, SIGNAL(seenChanged()), SIGNAL(seenChanged()), Qt::QueuedConnection);
 		emit seenChanged();
 
-		connect(mItem, SIGNAL(destroyed()), SLOT(onItemDestroyed()));
+		connect(mItem, SIGNAL(destroyed()), SLOT(onItemDestroyed()), Qt::QueuedConnection);
 
-		connect(mItem, SIGNAL(dynamicPropertyChanged(const char*,QVariant)), SLOT(onDynamicPropertyChanged(char const *)));
+		connect(mItem, SIGNAL(dynamicPropertyChanged(const char*,QVariant)), SLOT(onDynamicPropertyChanged(char const *)), Qt::QueuedConnection);
 		if (mIsSetting) {
 			emit minChanged();
 			emit defaultMinChanged();

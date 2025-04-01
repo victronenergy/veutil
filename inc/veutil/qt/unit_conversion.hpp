@@ -28,6 +28,12 @@ public:
 		Litre,
 		ImperialGallon,
 		UsGallon,
+
+		// Speed
+		MetresPerSecond,
+		KilometersPerHour,
+		MilesPerHour,
+		Knots,
 	};
 };
 
@@ -71,6 +77,11 @@ public:
 	VolumeConverter();
 };
 
+class SpeedConverter : public UnitConverter {
+public:
+	SpeedConverter();
+};
+
 // The common one.
 class UnitConverters : public QObject {
 	Q_OBJECT
@@ -85,6 +96,7 @@ public:
 
 	const TemperatureConverter temperature;
 	const VolumeConverter volume;
+	const SpeedConverter speed;
 
 	UnitConverter const *get(Unit::Type unit);
 
@@ -108,6 +120,7 @@ private:
 		mUnitConverters({
 			&temperature,
 			&volume,
+			&speed
 		})
 	{}
 };

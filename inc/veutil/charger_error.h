@@ -60,7 +60,7 @@
 #define CHARGER_ERROR_INVERTER_DC_LEVEL						53	/*!< Error   / Inverter dc level (internal dc rail voltage) */
 #define CHARGER_ERROR_INVERTER_AC_LEVEL						54	/*!< Error   / Inverter ac level (output voltage not ok) */
 #define CHARGER_ERROR_INVERTER_DC_FAIL						55	/*!< Error   / Inverter dc fail (dc on output) */
-#define CHARGER_ERROR_INVERTER_AC_FAIL						56	/*!< Error   / Inverter ac fail (shape wrong)*/
+#define CHARGER_ERROR_INVERTER_AC_FAIL						56	/*!< Error   / Inverter ac fail (ac voltage wrong)*/
 #define CHARGER_ERROR_INVERTER_AC_ON_OUTPUT					57	/*!< Error   / Inverter ac on output (inverter only) */
 #define CHARGER_ERROR_INVERTER_BRIDGE_FAULT					58	/*!< Error   / Inverter bridge fault (hardware signal) */
 #define CHARGER_ERROR_ACIN1_RELAY_FAULT						59  /*!< Error   / Multi ACIN1 relay test fault */
@@ -80,7 +80,7 @@
 #define CHARGER_ERROR_LINK_MULTIPLE_AC_INPUTS				73  /*!< Error   / Multiple AC inputs */
 #define CHARGER_ERROR_LINK_PHASE_OVERLOAD					74  /*!< Error   / Phase overload */
 #define CHARGER_ERROR_LINK_CONFIG_NOT_SUPPORTED				75  /*!< Error   / Network misconfigured */
-#define CHARGER_ERROR_76									76  /*!< free */
+#define CHARGER_ERROR_LINK_NETWORK_INCOMPLETE				76  /*!< Error   / Insufficient inverters for networked operation (check can cable or settings) */
 #define CHARGER_ERROR_77									77  /*!< free */
 #define CHARGER_ERROR_78									78  /*!< free */
 #define CHARGER_ERROR_79									79  /*!< free */

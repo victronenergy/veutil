@@ -34,6 +34,9 @@ public:
 		KilometersPerHour,
 		MilesPerHour,
 		Knots,
+
+		// Rotational Speed
+		RevolutionsPerMinute,
 	};
 };
 

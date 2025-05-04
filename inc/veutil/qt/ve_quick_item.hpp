@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtGlobal>
+
 #ifdef CFG_VE_QITEM_EXPORT
 # if CFG_VE_QITEM_EXPORT
 #  define VE_QITEM_EXPORT Q_DECL_EXPORT
@@ -11,12 +13,18 @@
 #endif
 
 #include <cstdint>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <qqmlintegration.h>
+#endif
 
 #include <veutil/qt/ve_qitem.hpp>
 #include <veutil/qt/unit_conversion.hpp>
 
 class VE_QITEM_EXPORT VeQuickItem : public QObject {
 	Q_OBJECT
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	QML_ELEMENT
+#endif
 	Q_PROPERTY(QVariant defaultValue READ getDefault NOTIFY defaultChanged)
 	Q_PROPERTY(double min READ getMin NOTIFY minChanged WRITE setMin)
 	Q_PROPERTY(double max READ getMax NOTIFY maxChanged WRITE setMax)
@@ -38,6 +46,7 @@ class VE_QITEM_EXPORT VeQuickItem : public QObject {
 	Q_PROPERTY(double defaultSourceMin READ getDefaultSourceMin NOTIFY defaultMinChanged)
 	Q_PROPERTY(double defaultSourceMax READ getDefaultSourceMax NOTIFY defaultMaxChanged)
 	Q_PROPERTY(bool isSetting READ getIsSetting NOTIFY isSettingChanged WRITE setIsSetting)
+    Q_PROPERTY(bool valid READ getIsValid NOTIFY isValidChanged)
 	Q_PROPERTY(bool invalidate READ getInvalidate NOTIFY invalidateChanged WRITE setInvalidate)
 
 public:
@@ -47,6 +56,7 @@ public:
 		mMaxInDisplayUnits(0),
 		mMinInDisplayUnits(0),
 		mIsSetting(isSetting),
+		mIsValid(0),
 		mInvalidate(1)
 	{
 		setUid("");
@@ -64,7 +74,7 @@ public:
 	};
 
 	QVariant getDefault() {
-		if (!mIsSetting)
+		if (!mItem || !mIsSetting)
 			return QVariant();
 		return convertToDisplay(mItem->itemProperty("defaultValue"));
 	}
@@ -87,7 +97,7 @@ public:
 		return getDefaultSourceMax();
 	}
 	double getDefaultSourceMax() {
-		if (!mIsSetting)
+		if (!mItem || !mIsSetting)
 			return mInvalidMax;
 		QVariant max = mItem->itemProperty("max");
 		return max.isValid() ? max.toDouble() : mInvalidMax;
@@ -99,6 +109,8 @@ public:
 		return getDefaultMin();
 	}
 	double getDefaultMin() {
+		if (!mItem)
+			return mInvalidMin;
 		QVariant min = convertToDisplay(mItem->itemProperty("min"));
 		return min.isValid() ? min.toDouble() : mInvalidMin;
 	}
@@ -111,7 +123,7 @@ public:
 		return getDefaultSourceMax();
 	}
 	double getDefaultSourceMin() {
-		if (!mIsSetting)
+		if (!mItem || !mIsSetting)
 			return mInvalidMin;
 		QVariant max = mItem->itemProperty("min");
 		return max.isValid() ? max.toDouble() : mInvalidMin;
@@ -119,13 +131,13 @@ public:
 
 	Q_INVOKABLE QString getText(bool force = false);
 	void setText(const QString &text);
-	QString getUid() { return mItem->uniqueId(); }
+	QString getUid() { return mItem ? mItem->uniqueId() : QString(); }
 	void setUid(QString uid);
 	Q_INVOKABLE QVariant getValue(bool force = false);
-	QVariant getSourceValue() { return mItem->getValue(); }
-	VeQItem::State getState() { return mItem->getState(); }
-	bool getSeen() { return mItem->getSeen(); }
-	Q_INVOKABLE int setValue(QVariant const &value) { return mItem->setValue(convertFromDisplay(value)); }
+	QVariant getSourceValue() { return mItem ? mItem->getValue() : QVariant(); }
+	VeQItem::State getState() { return mItem ? mItem->getState() : VeQItem::Idle; }
+	bool getSeen() { return mItem ? mItem->getSeen() : false; }
+	Q_INVOKABLE int setValue(QVariant const &value) { return mItem ? mItem->setValue(convertFromDisplay(value)) : 0; }
 	void setValueProperty(QVariant value);
 	void setSourceValueProperty(QVariant const &value);
 	QString getUnit() const { return mUnit; }
@@ -147,6 +159,8 @@ public:
 	bool getIsSetting() { return mIsSetting; }
 	void setIsSetting(bool value);
 
+	bool getIsValid() const { return mIsValid; }
+
 signals:
 	void defaultChanged();
 	void minChanged();
@@ -159,6 +173,7 @@ signals:
 	void uidChanged();
 	void valueChanged();
 	void stateChanged();
+	void isValidChanged();
 
 	void unitChanged();
 	void decimalsChanged();
@@ -187,7 +202,11 @@ protected slots:
 	}
 
 	void onValueChanged() {
+		const bool prevIsValid = mIsValid;
+		mIsValid = getValue().isValid();
 		emit valueChanged();
+		if (prevIsValid != mIsValid)
+			emit isValidChanged();
 		if (mTextMode == TextMode::Format)
 			emit textChanged();
 	}
@@ -206,12 +225,16 @@ protected:
 	uint32_t mMaxInDisplayUnits:1;
 	uint32_t mMinInDisplayUnits:1;
 	uint32_t mIsSetting:1;
+	uint32_t mIsValid:1;
 	uint32_t mIsAllocated:1;
 	uint32_t mInvalidate:1;
 
 private:
 	void setup()
 	{
+		if (!mItem)
+			return;
+
 		mItem->getValueAndChanges(this, SLOT(onValueChanged()));
 
 		connect(mItem, SIGNAL(stateChanged(VeQItem::State)), SIGNAL(stateChanged()));

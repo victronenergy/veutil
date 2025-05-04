@@ -16,10 +16,15 @@
 #else
 #include <veutil/qt/no_declarative_parser.hpp>
 #endif
-
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <qqmlintegration.h>
+#endif
 class VeQItemTableModel : public QAbstractItemModel, public QDeclarativeParserStatus
 {
 	Q_OBJECT
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	QML_ELEMENT
+#endif
 	Q_INTERFACES(QDeclarativeParserStatus)
 	Q_ENUMS(VeQItemTableRoles)
 	Q_ENUMS(Flags)

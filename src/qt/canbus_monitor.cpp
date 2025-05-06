@@ -86,6 +86,7 @@ void CanInterfaceMonitor::addCanInterface(unsigned int ifindex, udev_device *dev
 			config = CanBusProfiles::CanForcedVeCan;
 		} else if (strcmp(configStr, "classic-and-hv") == 0) {
 			config = CanBusProfiles::CanClassicAndHv;
+			defaultProfile = CanBusProfile::CanProfileCanBms500;
 		}
 	}
 

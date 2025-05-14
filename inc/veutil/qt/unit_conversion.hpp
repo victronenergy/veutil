@@ -133,7 +133,8 @@ private:
 		mUnitConverters({
 			&temperature,
 			&volume,
-			&speed
+			&speed,
+			&altitude
 		})
 	{}
 };

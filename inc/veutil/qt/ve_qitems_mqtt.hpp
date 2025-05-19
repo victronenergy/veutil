@@ -47,6 +47,7 @@ private:
 class VeQItemMqttProducer : public VeQItemProducer
 {
 	Q_OBJECT
+	Q_PROPERTY(VrmPortalMode vrmPortalMode READ vrmPortalMode NOTIFY vrmPortalModeChanged)
 	Q_PROPERTY(HeartbeatState heartbeatState READ heartbeatState NOTIFY heartbeatStateChanged)
 	Q_PROPERTY(ConnectionState connectionState READ connectionState NOTIFY connectionStateChanged)
 	Q_PROPERTY(QMqttClient::ClientError error READ error NOTIFY errorChanged)
@@ -85,6 +86,17 @@ public:
 	};
 	Q_ENUM(HeartbeatState)
 
+	// The VRM portal mode tracks whether the VRM broker's connection
+	// to the device is read-write or read-only.
+	// see dbus_flashmq::parseVrmPortalMode().
+	enum VrmPortalMode {
+		Unknown = -1,
+		Off = 0,
+		ReadOnly = 1,
+		Full = 2
+	};
+	Q_ENUM(VrmPortalMode)
+
 	VeQItemMqttProducer(VeQItem *root, const QString &id, const QString &clientIdPrefix, QObject *parent = nullptr);
 
 	VeQItem *createItem() override;
@@ -102,6 +114,7 @@ public:
 	void setCredentials(const QString &username, const QString &password);
 	bool publishValue(const QString &uid, const QVariant &value);
 	bool requestValue(const QString &uid);
+	VrmPortalMode vrmPortalMode() const;
 	HeartbeatState heartbeatState() const;
 	ConnectionState connectionState() const;
 	QMqttClient::ClientError error() const;
@@ -110,6 +123,7 @@ public:
 	void setPortalId(const QString &portalId);
 
 Q_SIGNALS:
+	void vrmPortalModeChanged();
 	void heartbeatStateChanged();
 	void connectionStateChanged();
 	void errorChanged();
@@ -148,6 +162,7 @@ private:
 	void enqueueStateTransition(const StateTransition &transition);
 	void transitionState();
 
+	void updateVrmPortalMode(int mode);
 	void setHeartbeatState(HeartbeatState heartbeatState);
 	void setConnectionState(ConnectionState connectionState);
 	void setError(QMqttClient::ClientError error);
@@ -173,6 +188,7 @@ private:
 	QUrl mUrl;
 	QString mHostName;
 	int mPort;
+	VrmPortalMode mVrmPortalMode;
 	HeartbeatState mHeartbeatState;
 	ConnectionState mConnectionState;
 	const int mReconnectAttemptIntervals[6] = { 250, 1000, 2000, 5000, 10000, 30000 };

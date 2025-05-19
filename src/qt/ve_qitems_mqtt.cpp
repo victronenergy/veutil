@@ -77,6 +77,7 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 	  mReadyStateFallbackTimer(new QTimer(this)),
 	  mMqttConnection(nullptr),
 	  mPort(0),
+	  mVrmPortalMode(Unknown),
 	  mHeartbeatState(HeartbeatInactive),
 	  mConnectionState(Idle),
 	  mAutoReconnectAttemptCounter(0),
@@ -758,6 +759,15 @@ void VeQItemMqttProducer::parseMessage(const QString &path, const QByteArray &me
 		item->produceValue(value.isNull() ? QVariant() : value, // work around QJsonValue always using std::nullptr_t even for literal null values.
 				VeQItem::Synchronized); // ensure the value is marked as "seen".
 		Q_EMIT messageReceived(path, value);
+
+		// also update our VrmPortalMode status if necessary.
+		if (mIsVrmBroker && path.compare("settings/0/Settings/Network/VrmPortal", Qt::CaseInsensitive) == 0) {
+			bool ok = true;
+			const int mode = value.toInt(&ok);
+			if (ok) {
+				updateVrmPortalMode(mode);
+			}
+		}
 	}
 }
 
@@ -795,6 +805,28 @@ void VeQItemMqttProducer::doKeepAlive(bool suppressRepublish)
 			mMqttConnection->publish(QMqttTopicName(QStringLiteral("R/%1/keepalive").arg(mPortalId)),
 					QByteArrayLiteral("{ \"keepalive-options\" : [\"suppress-republish\"] }"));
 		}
+	}
+}
+
+VeQItemMqttProducer::VrmPortalMode VeQItemMqttProducer::vrmPortalMode() const
+{
+	return mVrmPortalMode;
+}
+
+void VeQItemMqttProducer::updateVrmPortalMode(int mode)
+{
+	auto parseMode = [](int mode) {
+		switch (mode) {
+			case 0:  return VeQItemMqttProducer::Off;
+			case 1:  return VeQItemMqttProducer::ReadOnly;
+			case 2:  return VeQItemMqttProducer::Full;
+			default: return VeQItemMqttProducer::Unknown;
+		}
+	};
+	const VrmPortalMode newMode = parseMode(mode);
+	if (mVrmPortalMode != newMode) {
+		mVrmPortalMode = newMode;
+		Q_EMIT vrmPortalModeChanged();
 	}
 }
 

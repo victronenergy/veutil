@@ -717,6 +717,14 @@ void VeQItemMqttProducer::handleMessage(const QMqttMessage &message)
 					false, // don't set error.
 					QMqttClient::NoError
 				});
+				// Also, set the heartbeat state to Active.
+				// The VRM broker does not support retained messages any more,
+				// and so if we receive the full_publish_completed message,
+				// the VRM broker must be in communication with the GX device.
+				// (re)start our heartbeat timer.
+				mHeartBeatTimer->start();
+				mMissedHeartbeats = 0;
+				setHeartbeatState(HeartbeatActive);
 			}
 		} else if (topicName.compare(heartbeatTopic, Qt::CaseInsensitive) == 0) {
 			// (re)start our heartbeat timer.

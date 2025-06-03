@@ -71,7 +71,7 @@ const VeChargerError ChargerError::errors[] =
 	{ CHARGER_ERROR_LINK_PROTOCOL_VERSION,					QT_TR_NOOP("Network misconfigured") },
 	{ CHARGER_ERROR_LINK_PHASE_ROTATION,					QT_TR_NOOP("Phase rotation") },
 	{ CHARGER_ERROR_LINK_MULTIPLE_AC_INPUTS,				QT_TR_NOOP("Multiple AC inputs") },
-	{ CHARGER_ERROR_LINK_PHASE_OVERLOAD,					QT_TR_NOOP("Phase overload") },
+	{ CHARGER_ERROR_LINK_PHASE_OVERLOAD,					QT_TR_NOOP("Too many in parallel") },
 	{ CHARGER_ERROR_LINK_CONFIG_NOT_SUPPORTED,				QT_TR_NOOP("Network misconfigured") },
 	{ CHARGER_ERROR_LINK_NETWORK_INCOMPLETE,				QT_TR_NOOP("Network incomplete") },
 

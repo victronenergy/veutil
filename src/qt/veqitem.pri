@@ -36,7 +36,7 @@ contains(QT, dbus|qdbus) {
         $$VE_UTIL_INC/qt/ve_sort_filter_proxy_model.hpp \
 }
 
-contains(QT, gui|widgets) {
+contains(QT, widgets) | lessThan(QT_VERSION, 5):contains(QT, gui) {
     INCLUDEPATH += $$PWD/gui
 
     SOURCES += \

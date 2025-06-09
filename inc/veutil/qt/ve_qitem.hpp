@@ -8,6 +8,9 @@
 #include <QObject>
 #include <QString>
 #include <QVariant>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <qqmlintegration.h>
+#endif
 
 #ifdef CFG_VE_QITEM_EXPORT
 # if CFG_VE_QITEM_EXPORT
@@ -62,6 +65,10 @@ protected:
 class VE_QITEM_EXPORT VeQItem : public QObject
 {
 	Q_OBJECT
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QML_NAMED_ELEMENT(VeQItem)
+    QML_UNCREATABLE("Not creatable, use VeQuickItem instead")
+#endif
 	Q_ENUMS(State)
 	Q_PROPERTY(QVariant value READ getValue NOTIFY valueChanged WRITE setValue)
 	Q_PROPERTY(QVariant lastValidValue READ getLastValidValue NOTIFY valueChanged)

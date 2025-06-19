@@ -27,6 +27,12 @@ contains(QT, dbus|qdbus) {
         $$VE_UTIL_INC/qt/ve_qitem_exported_dbus_services.hpp \
 }
 
+# configure option, allow MQTT-backed VeQItems
+CONFIG(ve-qitems-mqtt) {
+    SOURCES += $$PWD/ve_qitems_mqtt.cpp
+    HEADERS += $$VE_UTIL_INC/qt/ve_qitems_mqtt.hpp
+}
+
 !lessThan(QT_VERSION, 5) | contains(QT, gui) {
     SOURCES += \
         $$PWD/ve_qitem_sort_table_model.cpp \

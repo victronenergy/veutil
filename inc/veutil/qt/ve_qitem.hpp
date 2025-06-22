@@ -140,6 +140,7 @@ class VE_QITEM_EXPORT VeQItem : public QObject
 	Q_PROPERTY(QString lastValidText READ getLastValidText NOTIFY textChanged)
 	Q_PROPERTY(bool seen READ getSeen NOTIFY seenChanged)
 	Q_PROPERTY(bool sensitive READ getSensitive WRITE setSensitive NOTIFY sensitiveChanged)
+	Q_PROPERTY(bool isLeaf READ isLeaf NOTIFY isLeafChanged)
 	Q_PROPERTY(QString uid READ uniqueId CONSTANT)
 	Q_PROPERTY(QString id READ id CONSTANT)
 
@@ -410,6 +411,7 @@ signals:
 
 	void stateChanged(VeQItem::State state);
 	void textStateChanged(VeQItem::State state);
+	void isLeafChanged();
 
 	/*
 	 * Note: if you want to connect to signals of the childs in a cross thread

@@ -129,11 +129,14 @@ VeQItem *VeQItem::itemAddChild(QString id, VeQItem *item)
 {
 	item->setId(id);
 	item->setParent(this);
+	const bool wasLeaf = mIsLeaf;
 	mIsLeaf = false;
 	emit childAboutToBeAdded(item);
 	mChildren[id] = item;
 	emit childAdded(item);
 	item->afterAdd();
+	if (!wasLeaf)
+		emit isLeafChanged();
 
 	return item;
 }
@@ -189,8 +192,11 @@ VeQItem *VeQItem::createChild(QString id, bool isLeaf, bool isTrusted)
 		return nullptr;
 
 	VeQItem *item = producer()->createItem();
+	const bool itemWasLeaf = item->mIsLeaf;
 	item->mIsLeaf = isLeaf;
 	itemAddChild(id, item);
+	if (itemWasLeaf != item->mIsLeaf)
+		emit item->isLeafChanged();
 	return item;
 }
 

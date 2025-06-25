@@ -588,7 +588,7 @@ void VeQItemMqttProducer::continueConnect()
 	// race condition where we might have two connections active.
 	QMetaObject::invokeMethod(this, [this] {
 		if (mMqttConnection) {
-			mMqttConnection->setCleanSession(false);
+			mMqttConnection->setCleanSession(true);
 			mMqttConnection->connectToHost();
 		} else {
 			// the MQTT connection was deleted out from under us...

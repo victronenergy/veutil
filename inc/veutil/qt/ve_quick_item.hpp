@@ -137,7 +137,7 @@ public:
 	QVariant getSourceValue() { return mItem ? mItem->getValue() : QVariant(); }
 	VeQItem::State getState() { return mItem ? mItem->getState() : VeQItem::Idle; }
 	bool getSeen() { return mItem ? mItem->getSeen() : false; }
-	Q_INVOKABLE int setValue(QVariant const &value) { return mItem ? mItem->setValue(convertFromDisplay(value)) : 0; }
+	Q_INVOKABLE int setValue(QVariant const &value);
 	void setValueProperty(QVariant value);
 	void setSourceValueProperty(QVariant const &value);
 	QString getUnit() const { return mUnit; }

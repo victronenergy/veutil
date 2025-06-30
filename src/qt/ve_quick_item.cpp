@@ -101,6 +101,31 @@ QVariant VeQuickItem::getValue(bool force)
 	return convertToDisplay(value);
 }
 
+int VeQuickItem::setValue(const QVariant &value)
+{
+	if (!mItem)
+		return 0;
+
+	QVariant newValue = convertFromDisplay(value);
+
+	// Since javascript isn't typed, it uses "number" for all of numeric ones,
+	// the type of the value might have changed to double / int. So change it
+	// back to the type of the received value. Furthermore this also ensures the
+	// correct type is written back if unit conversion is used.
+	if (newValue.isValid()) {
+		QVariant currentValue = mItem->getLocalValue();
+		QMetaType type = currentValue.metaType();
+		bool ok = type.isValid() ? newValue.convert(type) : true;
+
+		if (!ok) {
+			newValue = convertFromDisplay(value);
+			qWarning() << getUid() << "cannot convert " << newValue << "to" << type;
+		}
+	}
+
+	return mItem->setValue(newValue);
+}
+
 /**
  * Handle changes of the value property.
  *

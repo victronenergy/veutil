@@ -24,14 +24,14 @@ public:
 		Fahrenheit,
 
 		// Volume
-		CubicMeter,
+		CubicMetre,
 		Litre,
 		ImperialGallon,
 		UsGallon,
 
 		// Speed
 		MetresPerSecond,
-		KilometersPerHour,
+		KilometresPerHour,
 		MilesPerHour,
 		Knots,
 
@@ -39,7 +39,7 @@ public:
 		RevolutionsPerMinute,
 
 		// Altitude
-		Meter,
+		Metre,
 		Foot,
 	};
 };

@@ -71,7 +71,7 @@ UnitConverter::~UnitConverter()
 // another one.
 //
 // Note: it will error and return NaN when used incorrectly, you cannot convert
-// meter to seconds e.g. it is simply considered a programming error.
+// metre to seconds e.g. it is simply considered a programming error.
 double UnitConverter::convert(double value, Unit::Type from, Unit::Type to) const
 {
 	if (from == Unit::Default)
@@ -117,8 +117,8 @@ TemperatureConverter::TemperatureConverter() :
 
 // Volume conversions
 VolumeConverter::VolumeConverter() :
-	UnitConverter(Unit::CubicMeter, {
-		{ Unit::CubicMeter, new UnitBase("m<sup>3</sup>") },
+	UnitConverter(Unit::CubicMetre, {
+		{ Unit::CubicMetre, new UnitBase("m<sup>3</sup>") },
 		{ Unit::Litre, new UnitLinear("L", 1.0 * 1000.0) },
 		{ Unit::ImperialGallon, new UnitLinear("gall", 219.969157) },
 		{ Unit::UsGallon, new UnitLinear("gall", 264.172052) },
@@ -126,8 +126,8 @@ VolumeConverter::VolumeConverter() :
 
 // Speed conversions
 SpeedConverter::SpeedConverter() :
-	UnitConverter(Unit::KilometersPerHour, {
-		{ Unit::KilometersPerHour, new UnitBase(QString::fromUtf8("km/h")) },
+	UnitConverter(Unit::KilometresPerHour, {
+		{ Unit::KilometresPerHour, new UnitBase(QString::fromUtf8("km/h")) },
 		{ Unit::MilesPerHour, new UnitLinear("mph", 0.621371) },
 		{ Unit::MetresPerSecond, new UnitLinear("m/s", 0.277778) },
 		{ Unit::Knots, new UnitLinear("kt", 0.539957) },
@@ -135,8 +135,8 @@ SpeedConverter::SpeedConverter() :
 
 // Altitude conversions
 AltitudeConverter::AltitudeConverter() :
-	UnitConverter(Unit::Meter, {
-		{ Unit::Meter, new UnitBase("m") },
+	UnitConverter(Unit::Metre, {
+		{ Unit::Metre, new UnitBase("m") },
 		{ Unit::Foot, new UnitLinear("ft", 3.28084) },
 	}) {}
 

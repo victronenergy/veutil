@@ -1,3 +1,4 @@
+#include <veutil/nlohmann/json.hpp>
 #include <veutil/qt/ve_qitems_mqtt.hpp>
 
 #include <QMutexLocker>
@@ -731,6 +732,33 @@ void VeQItemMqttProducer::handleMessage(const QMqttMessage &message)
 	}
 }
 
+static QVariant nlohmannToQVariant(nlohmann::json const &elem, bool &ok)
+{
+	ok = true;
+	if (elem.is_null())
+		return QVariant{};
+	if (elem.is_number_float())
+		return QVariant(elem.get<double>());
+	if (elem.is_number_unsigned())
+		return QVariant(elem.get<qulonglong>());
+	if (elem.is_number_integer())
+		return QVariant(elem.get<qlonglong>());
+	if (elem.is_boolean())
+		return QVariant(elem.get<bool>());
+	if (elem.is_string())
+		return QVariant(QString::fromStdString(elem.get<std::string>()));
+
+	ok = false;
+
+	return QVariant{};
+}
+
+static QVariant nlohmannToQVariant(nlohmann::json const &elem)
+{
+	bool dummy;
+	return nlohmannToQVariant(elem, dummy);
+}
+
 void VeQItemMqttProducer::parseMessage(const QString &path, const QByteArray &message)
 {
 	VeQItemMqtt *item = qobject_cast<VeQItemMqtt*>(mProducerRoot->itemGetOrCreate(path, true, true));
@@ -741,21 +769,45 @@ void VeQItemMqttProducer::parseMessage(const QString &path, const QByteArray &me
 		Q_EMIT nullMessageReceived(path);
 		item->produceValue(QVariant(), VeQItem::Offline);
 	} else {
-		// otherwise, update the value in the item.
-		const QJsonObject payload = QJsonDocument::fromJson(message).object();
-		const QVariant min = payload.value(QStringLiteral("min")).toVariant();
-		if (!min.isNull() && min.isValid()) {
+		QVariant min, max, def, value;
+
+		// The Qt json parser turns any double which can be represented as an integer
+		// into an integer. That causes problems when trying to set a value back, since
+		// the code makes sure the same type is set again. So for any basic type, which
+		// is the common case, nlohmann is used, so normally the json only needs to be
+		// parsed ones.
+		bool ok = false;
+		try {
+			nlohmann::json j = nlohmann::json::parse(message.toStdString());
+			value = nlohmannToQVariant(j["value"], ok);
+			if (ok) {
+				min = nlohmannToQVariant(j["min"]);
+				max = nlohmannToQVariant(j["max"]);
+				def = nlohmannToQVariant(j["default"]);
+			}
+		} catch (const std::exception&) {
+			ok = false;
+		}
+
+		// For arrays and dictonaries the Qt json parser is used, to make sure the object
+		// is compatible with QVariant / Qml. This is an exceptional case though.
+		if (!ok) {
+			QJsonObject obj = QJsonDocument::fromJson(message).object();
+			value = obj.value("value").toVariant();
+			min = obj.value("min").toVariant();
+			max = obj.value("max").toVariant();
+			def = obj.value("default").toVariant();
+		}
+
+		if (!min.isNull() && min.isValid())
 			item->itemProduceProperty("min", min);
-		}
-		const QVariant max = payload.value(QStringLiteral("max")).toVariant();
-		if (!max.isNull() && max.isValid()) {
+
+		if (!max.isNull() && max.isValid())
 			item->itemProduceProperty("max", max);
-		}
-		const QVariant def = payload.value(QStringLiteral("default")).toVariant();
-		if (!def.isNull() && def.isValid()) {
+
+		if (!def.isNull() && def.isValid())
 			item->itemProduceProperty("default", def);
-		}
-		const QVariant value = payload.value(QStringLiteral("value")).toVariant();
+
 		item->produceValue(value.isNull() ? QVariant() : value, // work around QJsonValue always using std::nullptr_t even for literal null values.
 				VeQItem::Synchronized); // ensure the value is marked as "seen".
 		Q_EMIT messageReceived(path, value);

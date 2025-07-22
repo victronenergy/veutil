@@ -168,6 +168,7 @@ private:
 	void setError(QMqttClient::ClientError error);
 	void handleMessage(const QMqttMessage &message);
 	void parseMessage(const QString &path, const QByteArray &message);
+	QVariant fixupParsedValue(const QString &path, const QByteArray &message, const QVariant &value) const;
 	void stop();
 	void deleteMqttConnection();
 

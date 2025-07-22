@@ -763,7 +763,8 @@ void VeQItemMqttProducer::parseMessage(const QString &path, const QByteArray &me
 		if (!def.isNull() && def.isValid()) {
 			item->itemProduceProperty("default", def);
 		}
-		const QVariant value = payload.value(QStringLiteral("value")).toVariant();
+		const QVariant val = payload.value(QStringLiteral("value")).toVariant();
+		const QVariant value = fixupParsedValue(path, message, val);
 		item->produceValue(value.isNull() ? QVariant() : value, // work around QJsonValue always using std::nullptr_t even for literal null values.
 				VeQItem::Synchronized); // ensure the value is marked as "seen".
 		Q_EMIT messageReceived(path, value);
@@ -777,6 +778,53 @@ void VeQItemMqttProducer::parseMessage(const QString &path, const QByteArray &me
 			}
 		}
 	}
+}
+
+QVariant VeQItemMqttProducer::fixupParsedValue(const QString &path, const QByteArray &message, const QVariant &value) const
+{
+	// See QTBUG-138581
+	// QJsonDocument::parse() will produce a QJsonValue of type integer even if the number has a fractional part.
+	// To work around this, check the incoming message to see whether the value had a decimal point,
+	// and if so, convert the value back to a double.
+	if (value.userType() != QMetaType::Int && value.userType() != QMetaType::LongLong) {
+		return value;
+	}
+
+	const QString compactMessage = QString::fromUtf8(message).simplified().replace(QStringLiteral(" "), QString());
+	const qsizetype messageIndex = compactMessage.indexOf(QStringLiteral("value"));
+
+	if (messageIndex == -1) {
+		return value;
+	}
+
+	for (qsizetype j = messageIndex + 6; j < compactMessage.size(); ++j) {
+		const QChar curr(compactMessage[j]);
+		if (curr == QChar('{')
+				|| curr == QChar('}')
+				|| curr == QChar('[')
+				|| curr == QChar(']')
+				|| curr == QChar(',')
+				|| curr == QChar('"')
+				|| curr == QChar('\'')) {
+			break;
+		} else if (curr == QChar('.')) {
+			// found a decimal point in the input.
+			// convert the parsed value back to double.
+			bool ok;
+			const double converted = value.toDouble(&ok);
+			if (ok) {
+				//qInfo() << "Converted parsed value for path: " << path
+				//	<< " back to double: " << converted
+				//	<< " given original message: " << message;
+				return QVariant(converted);
+			} else {
+				qWarning() << "Failed to convert parsed value for path: " << path << " back to double.  Returning " << value;
+				break;
+			}
+		}
+	}
+
+	return value;
 }
 
 // The initial keepAlive sent immediately after subscribing to "N/portalId/#"

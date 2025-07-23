@@ -732,6 +732,58 @@ void VeQItemMqttProducer::handleMessage(const QMqttMessage &message)
 	}
 }
 
+static QByteArray qvariantToJson(const QVariant &value)
+{
+	QByteArray ret;
+	bool ok = false;
+
+	try {
+		ok = true;
+		nlohmann::json j;
+
+		switch (value.userType()) {
+		case QMetaType::Nullptr:
+			j["value"] = nullptr;
+			break;
+		case QMetaType::Double:
+			j["value"] = value.toDouble(&ok);
+			break;
+		case QMetaType::ULongLong:
+			j["value"] = value.toULongLong(&ok);
+			break;
+		case QMetaType::LongLong:
+			j["value"] = value.toLongLong(&ok);
+			break;
+		case QMetaType::Int:
+			j["value"] = value.toInt(&ok);
+			break;
+		case QMetaType::Bool:
+			j["value"] = value.toBool();
+			break;
+		case QMetaType::QString:
+			j["value"] = value.toString().toStdString();
+			break;
+		default:
+			ok = false;
+			break;
+		}
+
+		if (ok) {
+			ret = QByteArray::fromStdString(j.dump());
+		}
+	} catch (const std::exception&) {
+		ok = false;
+	}
+
+	if (!ok) {
+		const QJsonObject obj { { QStringLiteral("value"), QJsonValue::fromVariant(value) } };
+		const QJsonDocument doc(obj);
+		ret = doc.toJson(QJsonDocument::Compact);
+	}
+
+	return ret;
+}
+
 static QVariant nlohmannToQVariant(nlohmann::json const &elem, bool &ok)
 {
 	ok = true;
@@ -946,9 +998,7 @@ bool VeQItemMqttProducer::publishValue(const QString &uid, const QVariant &value
 	}
 
 	const QString topic = QStringLiteral("W/%1/%2").arg(mPortalId, uid.mid(5));
-	const QJsonObject obj { { QStringLiteral("value"), QJsonValue::fromVariant(value) } };
-	const QJsonDocument doc(obj);
-	mMqttConnection->publish(topic, doc.toJson(QJsonDocument::Compact));
+	mMqttConnection->publish(topic, qvariantToJson(value));
 	return true;
 }
 

@@ -45,6 +45,7 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 	CanBusService *motordrive = new CanBusService("dbus-motordrive", interface, this);
 	CanBusService *rvc = new CanBusService("dbus-rv-c", interface, this);
 	CanBusService *hvCanBus = new CanBusService("can-bus-bms-hv", interface, this);
+	CanBusService *canOpenMotordrive = new CanBusService("dbus-canopen-motordrive", interface, this);
 
 	// Disabled profile, without any service
 	CanBusProfile *profile = new CanBusProfile(0, this);
@@ -83,6 +84,14 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 
 	// Debug, bring up the interface (500kbit), but not the services
 	profile = new CanBusProfile(500000, this);
+	mProfiles.append(profile);
+
+	profile = new CanBusProfile(250000, this);
+	profile->addService(canOpenMotordrive);
+	mProfiles.append(profile);
+
+	profile = new CanBusProfile(500000, this);
+	profile->addService(canOpenMotordrive);
 	mProfiles.append(profile);
 
 	VeQItem *item = settings->add(QString("Canbus/%1/Profile").arg(interface),

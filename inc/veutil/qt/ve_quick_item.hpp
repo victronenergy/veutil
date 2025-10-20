@@ -158,6 +158,7 @@ signals:
 	void textChanged();
 	void uidChanged();
 	void valueChanged();
+	void setValueResult(VeQItemEvent const *ev);
 	void stateChanged();
 
 	void unitChanged();
@@ -228,6 +229,9 @@ private:
 		connect(mItem, &QObject::destroyed, this, &VeQuickItem::onItemDestroyed);
 
 		connect(mItem, &VeQItem::dynamicPropertyChanged, this, &VeQuickItem::onDynamicPropertyChanged);
+
+		connect(mItem, &VeQItem::setValueResult, this, &VeQuickItem::setValueResult);
+
 		if (mIsSetting) {
 			emit minChanged();
 			emit defaultMinChanged();

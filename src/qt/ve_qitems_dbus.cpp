@@ -439,6 +439,23 @@ QVariant VeQItemDbus::itemProperty(const char *name, bool force)
 
 void VeQItemDbus::setValueDone(QDBusPendingCallWatcher *call)
 {
+	QDBusPendingReply<int> reply = *call;
+
+	if (reply.isError()) {
+		QDBusError error(reply.error());
+		qDebug() << uniqueId() << "error" << error.message();
+		VeQItemEvent err(VeQItemEvent::VE_QITEM_BUS_ERROR);
+		err.setWhat(error.message());
+		reportSetValueResult(err);
+	} else {
+		int ret = reply.value();
+		if (ret < 0)
+			qDebug() << uniqueId() << "error" << ret;
+		VeQItemEvent err(VeQItemEvent::VE_QITEM_SETVALUE_RETVAL);
+		err.setResponseCode(ret);
+		reportSetValueResult(err);
+	}
+
 	call->deleteLater();
 }
 

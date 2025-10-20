@@ -51,6 +51,70 @@ protected:
 	void *mCtx;
 };
 
+class VeQItemEvent : public QObject
+{
+	Q_OBJECT
+	Q_PROPERTY(bool hasResponseCode READ hasResponseCode CONSTANT)
+	Q_PROPERTY(int responseCode READ responseCode CONSTANT)
+	Q_PROPERTY(Type type READ type CONSTANT)
+	Q_PROPERTY(QString what READ what CONSTANT)
+
+public:
+	enum Type {
+		VE_QITEM_BUS_ERROR,
+		VE_QITEM_SETVALUE_RETVAL,
+	};
+	Q_ENUM(Type)
+
+	explicit VeQItemEvent(Type type) :
+		QObject(),
+		mType(type)
+	{
+	}
+	~VeQItemEvent() {}
+
+	Type type() const { return mType; }
+
+	int responseCode() const { return mResponseCode; }
+	void setResponseCode(int code) {
+		mHasReponseCode = true;
+		mResponseCode = code;
+	}
+	bool hasResponseCode() const { return mHasReponseCode; }
+
+	QString what() const { return mWhat; }
+	void setWhat(QString const &what) { mWhat = what; }
+
+	Q_INVOKABLE QString errorMsg() const {
+		if (!isError())
+			return "";
+		if (hasResponseCode())
+			return "(" + QString::number(responseCode()) + ")";
+		if (!mWhat.isEmpty())
+			return "(" + mWhat + ")";
+		return "";
+	}
+
+	Q_INVOKABLE bool isError() const {
+		switch (mType) {
+		case VE_QITEM_BUS_ERROR:
+			return true;
+		case VE_QITEM_SETVALUE_RETVAL:
+			return mResponseCode < 0;
+		default:
+			return false;
+		}
+	}
+
+private:
+	Q_DISABLE_COPY_MOVE(VeQItemEvent)
+
+	Type mType;
+	int mResponseCode = 0;
+	bool mHasReponseCode = false;
+	QString mWhat;
+};
+
 /**
  * Base class for an item. An item can hold any information about a
  * device / system or also settings. It can be associated with a local device,
@@ -291,6 +355,7 @@ public:
 signals:
 	void dynamicPropertyChanged(char const *name, QVariant var);
 	void valueChanged(QVariant var);
+	void setValueResult(VeQItemEvent const *error);
 	void textChanged(QString text);
 	void seenChanged();
 
@@ -320,6 +385,8 @@ protected:
 	void setTextState(State state);
 	// last point before the item is announced
 	virtual void setParent(QObject *parent);
+
+	void reportSetValueResult(VeQItemEvent const &ev) { emit setValueResult(&ev); }
 
 protected slots:
 	void receiverDestroyed(QObject *obj);
@@ -393,6 +460,7 @@ private:
 
 Q_DECLARE_METATYPE(VeQItem *)
 Q_DECLARE_OPERATORS_FOR_FLAGS(VeQItem::Properties)
+Q_DECLARE_METATYPE(VeQItemEvent)
 
 /* Singleton to get the root item */
 class VE_QITEM_EXPORT VeQItems

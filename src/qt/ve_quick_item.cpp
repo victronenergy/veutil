@@ -106,12 +106,14 @@ int VeQuickItem::setValue(const QVariant &value)
 	// correct type is written back if unit conversion is used.
 	if (newValue.isValid()) {
 		QVariant currentValue = mItem->getLocalValue();
-		QMetaType type = currentValue.metaType();
-		bool ok = newValue.convert(type);
+		if (currentValue.isValid()) {
+			QMetaType type = currentValue.metaType();
+			bool ok = newValue.convert(type);
 
-		if (!ok) {
-			newValue = convertFromDisplay(value);
-			qWarning() << getUid() << "cannot convert " << newValue << "to" << type;
+			if (!ok) {
+				newValue = convertFromDisplay(value);
+				qWarning() << getUid() << "cannot convert " << newValue << "to" << type;
+			}
 		}
 	}
 

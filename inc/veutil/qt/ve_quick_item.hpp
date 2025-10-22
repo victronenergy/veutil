@@ -214,20 +214,20 @@ private:
 	{
 		mItem->getValueAndChanges(this, SLOT(onValueChanged()));
 
-		connect(mItem, SIGNAL(stateChanged(VeQItem::State)), SIGNAL(stateChanged()));
+		connect(mItem, &VeQItem::stateChanged, this, &VeQuickItem::stateChanged);
 		emit stateChanged();
 
 		if (mTextMode == TextMode::FromItem) {
-			connect(mItem, SIGNAL(textChanged(QString)), SIGNAL(textChanged()));
+			connect(mItem, &VeQItem::textChanged, this, &VeQuickItem::textChanged);
 			emit textChanged();
 		}
 
-		connect(mItem, SIGNAL(seenChanged()), SIGNAL(seenChanged()));
+		connect(mItem, &VeQItem::seenChanged, this, &VeQuickItem::seenChanged);
 		emit seenChanged();
 
-		connect(mItem, SIGNAL(destroyed()), SLOT(onItemDestroyed()));
+		connect(mItem, &QObject::destroyed, this, &VeQuickItem::onItemDestroyed);
 
-		connect(mItem, SIGNAL(dynamicPropertyChanged(const char*,QVariant)), SLOT(onDynamicPropertyChanged(char const *)));
+		connect(mItem, &VeQItem::dynamicPropertyChanged, this, &VeQuickItem::onDynamicPropertyChanged);
 		if (mIsSetting) {
 			emit minChanged();
 			emit defaultMinChanged();
@@ -242,7 +242,7 @@ private:
 			return;
 		mTextMode = mode;
 		if (mode != TextMode::FromItem)
-			disconnect(mItem, SIGNAL(textChanged(QString)));
+			disconnect(mItem, &VeQItem::textChanged, this, &VeQuickItem::textChanged);
 	}
 
 	void checkTextChanged(QString const &oldText) {

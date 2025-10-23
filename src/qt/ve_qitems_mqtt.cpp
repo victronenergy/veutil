@@ -5,6 +5,8 @@
 #include <QRandomGenerator>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSequentialIterable>
+#include <QAssociativeIterable>
 
 //--
 
@@ -740,6 +742,50 @@ void VeQItemMqttProducer::handleMessage(const QMqttMessage &message)
 	}
 }
 
+static nlohmann::json qvariantToNlohmann(const QVariant &value)
+{
+	const auto mt = value.metaType();
+	if (!value.isValid() || mt.id() == QMetaType::Nullptr)
+		return nullptr;
+
+	if (mt.id() == QMetaType::Bool)
+		return value.toBool();
+	if (mt.id() == QMetaType::Double)
+		return value.toDouble();
+	if (mt.id() == QMetaType::Int ||
+		mt.id() == QMetaType::UInt ||
+		mt.id() == QMetaType::LongLong ||
+		mt.id() == QMetaType::ULongLong)
+		return value.toLongLong();
+	if (mt.id() == QMetaType::QString)
+		return value.toString().toStdString();
+	if (mt.id() == QMetaType::QByteArray)
+		return std::string(value.toByteArray().constData(), value.toByteArray().size());
+
+	// Sequential containers → JSON array
+	if (value.canConvert<QSequentialIterable>()) {
+		nlohmann::json arr = nlohmann::json::array();
+		for (const QVariant &elem : value.value<QSequentialIterable>())
+			arr.push_back(qvariantToNlohmann(elem));
+		return arr;
+	}
+
+	// Associative containers → JSON object
+	if (value.canConvert<QAssociativeIterable>()) {
+		nlohmann::json obj = nlohmann::json::object();
+		QAssociativeIterable iterable = value.value<QAssociativeIterable>();
+		for (auto it = iterable.begin(); it != iterable.end(); ++it)
+			obj[it.key().toString().toStdString()] = qvariantToNlohmann(it.value());
+		return obj;
+	}
+
+	// Fallback
+	if (value.canConvert<QString>())
+		return value.toString().toStdString();
+
+	return nullptr;
+}
+
 static QByteArray qvariantToJson(const QVariant &value)
 {
 	QByteArray ret;
@@ -749,41 +795,20 @@ static QByteArray qvariantToJson(const QVariant &value)
 		ok = true;
 		nlohmann::json j;
 
-		switch (value.userType()) {
-		case QMetaType::Nullptr:
-			j["value"] = nullptr;
-			break;
-		case QMetaType::Double:
-			j["value"] = value.toDouble(&ok);
-			break;
-		case QMetaType::ULongLong:
-			j["value"] = value.toULongLong(&ok);
-			break;
-		case QMetaType::LongLong:
-			j["value"] = value.toLongLong(&ok);
-			break;
-		case QMetaType::Int:
-			j["value"] = value.toInt(&ok);
-			break;
-		case QMetaType::Bool:
-			j["value"] = value.toBool();
-			break;
-		case QMetaType::QString:
-			j["value"] = value.toString().toStdString();
-			break;
-		default:
-			ok = false;
-			break;
-		}
-
-		if (ok) {
+		auto v = qvariantToNlohmann(value);
+		if (!v.is_null()) {
+			j["value"] = v;
 			ret = QByteArray::fromStdString(j.dump());
+		} else {
+			ok = false; // Try Qt JSON serialization
 		}
 	} catch (const std::exception&) {
 		ok = false;
 	}
 
 	if (!ok) {
+		qWarning() << "Cannot convert QVariant type" << value.metaType()
+			<< "to nlohmann type, using QJsonDocument::toJson() instead";
 		const QJsonObject obj { { QStringLiteral("value"), QJsonValue::fromVariant(value) } };
 		const QJsonDocument doc(obj);
 		ret = doc.toJson(QJsonDocument::Compact);

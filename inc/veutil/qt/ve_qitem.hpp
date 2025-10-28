@@ -132,6 +132,7 @@ class VE_QITEM_EXPORT VeQItem : public QObject
 	Q_PROPERTY(QString text READ getText NOTIFY textChanged)
 	Q_PROPERTY(QString lastValidText READ getLastValidText NOTIFY textChanged)
 	Q_PROPERTY(bool seen READ getSeen NOTIFY seenChanged)
+	Q_PROPERTY(bool sensitive READ getSensitive WRITE setSensitive NOTIFY sensitiveChanged)
 	Q_PROPERTY(QString uid READ uniqueId CONSTANT)
 	Q_PROPERTY(QString id READ id CONSTANT)
 
@@ -203,6 +204,12 @@ public:
 	virtual QVariant getLocalValue()
 	{
 		return mValue;
+	}
+
+	QVariant logValue(QVariant const &value) {
+		if (mSensitive)
+			return "***HIDDEN***";
+		return value;
 	}
 
 	/**
@@ -299,6 +306,14 @@ public:
 	 */
 	bool getSeen() { return mSeen; }
 
+	bool getSensitive() { return mSensitive; }
+	void setSensitive(bool sensitive) {
+		if (mSensitive == sensitive)
+			return;
+		mSensitive = sensitive;
+		emit sensitiveChanged();
+	}
+
 	virtual void produceValue(QVariant value, State state = Synchronized, bool forceChanged = false);
 	virtual void produceText(QString text, State state = Synchronized);
 
@@ -358,6 +373,7 @@ signals:
 	void setValueResult(VeQItemEvent const *error);
 	void textChanged(QString text);
 	void seenChanged();
+	void sensitiveChanged();
 
 	// internal, used by getValueAndChanges
 	void initValue(QVariant var);
@@ -414,6 +430,7 @@ protected:
 	QString mUid;
 	bool mWatched;
 	bool mSeen;
+	bool mSensitive;
 	QHash<QString, State> mPropertyState;
 };
 

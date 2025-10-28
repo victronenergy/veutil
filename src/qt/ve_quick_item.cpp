@@ -67,7 +67,10 @@ void VeQuickItem::setText(const QString &text)
 
 void VeQuickItem::setUid(QString uid)
 {
+	bool sensitive = false;
 	if (mItem) {
+		sensitive = getSensitive();
+
 		// check it changed at all
 		if (uid == mItem->uniqueId())
 			return;
@@ -85,8 +88,11 @@ void VeQuickItem::setUid(QString uid)
 		mItem = VeQItems::getRoot()->itemGetOrCreate(uid, true, false);
 		mIsAllocated = false;
 	}
-	if (mItem)
+	if (mItem) {
 		setup();
+		if (sensitive)
+			mItem->setSensitive(sensitive);
+	}
 	emit uidChanged();
 }
 
@@ -112,7 +118,10 @@ int VeQuickItem::setValue(const QVariant &value)
 
 			if (!ok) {
 				newValue = convertFromDisplay(value);
-				qWarning() << getUid() << "cannot convert " << newValue << "to" << type;
+				if (mItem->getSensitive())
+					qWarning() << getUid() << "cannot convert " << newValue.typeName() << "to" << type;
+				else
+					qWarning() << getUid() << "cannot convert " << newValue << "to" << type;
 			}
 		}
 	}

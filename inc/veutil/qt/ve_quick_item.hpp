@@ -27,6 +27,7 @@ class VE_QITEM_EXPORT VeQuickItem : public QObject {
 	Q_PROPERTY(QVariant value READ getValue NOTIFY valueChanged WRITE setValueProperty)
 	Q_PROPERTY(VeQItem::State state READ getState NOTIFY stateChanged)
 	Q_PROPERTY(bool seen READ getSeen NOTIFY seenChanged)
+	Q_PROPERTY(bool sensitive READ getSensitive WRITE setSensitive NOTIFY sensitiveChanged)
 	Q_PROPERTY(QString unit READ getUnit NOTIFY unitChanged WRITE setUnit)
 	Q_PROPERTY(int decimals READ getDecimals NOTIFY decimalsChanged WRITE setDecimals)
 	Q_PROPERTY(QString invalidText READ getInvalidText NOTIFY invalidTextChanged WRITE setInvalidText)
@@ -147,6 +148,9 @@ public:
 	bool getIsSetting() { return mIsSetting; }
 	void setIsSetting(bool value);
 
+	bool getSensitive() { return mItem->getSensitive(); }
+	void setSensitive(bool sensitive) { mItem->setSensitive(sensitive); }
+
 signals:
 	void defaultChanged();
 	void minChanged();
@@ -154,6 +158,7 @@ signals:
 	void maxChanged();
 	void defaultMaxChanged();
 	void seenChanged();
+	void sensitiveChanged();
 
 	void textChanged();
 	void uidChanged();
@@ -231,6 +236,8 @@ private:
 		connect(mItem, &VeQItem::dynamicPropertyChanged, this, &VeQuickItem::onDynamicPropertyChanged);
 
 		connect(mItem, &VeQItem::setValueResult, this, &VeQuickItem::setValueResult);
+
+		connect(mItem, &VeQItem::sensitiveChanged, this, &VeQuickItem::sensitiveChanged);
 
 		if (mIsSetting) {
 			emit minChanged();

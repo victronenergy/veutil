@@ -462,7 +462,7 @@ void VeQItemDbus::setValueDone(QDBusPendingCallWatcher *call)
 int VeQItemDbus::setValue(const QVariant &value)
 {
 	if (!dbusIsServiceRegistered() || mState == Offline) {
-		qDebug() << "ignoring request for" << uniqueId() << "to set value" << value << "(not online)";
+		qDebug() << "ignoring request for" << uniqueId() << "to set value" << logValue(value) << "(not online)";
 		return -1;
 	}
 

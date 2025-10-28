@@ -14,7 +14,8 @@ VeQItem::VeQItem(VeQItemProducer *producer, QObject *parent) :
 	mProducer(producer),
 	mIsLeaf(false),
 	mWatched(false),
-	mSeen(false)
+	mSeen(false),
+	mSensitive(false)
 {
 }
 

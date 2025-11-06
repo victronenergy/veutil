@@ -88,6 +88,7 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 
 	profile = new CanBusProfile(250000, this);
 	profile->addService(canOpenMotordrive);
+	profile->addService(vecan);
 	mProfiles.append(profile);
 
 	profile = new CanBusProfile(500000, this);

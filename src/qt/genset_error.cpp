@@ -62,6 +62,21 @@ private:
 	DEIF() = default;
 };
 
+class Cummins
+{
+	Q_DECLARE_TR_FUNCTIONS(CUMMINS)
+
+public:
+	static QString getDescription(QString errorId);
+
+private:
+	static constexpr quint32 SpnAndFmiToNumber(quint32 spn, quint8 fmi) {
+		return spn << 8 | fmi;
+	}
+
+	Cummins() = default;
+};
+
 QString GensetError::getDescription(QString errorId, int nrOfPhases)
 {
 	if (errorId == "")
@@ -76,6 +91,8 @@ QString GensetError::getDescription(QString errorId, int nrOfPhases)
 		return CRE::getDescription(errorId);
 	if (errorId.startsWith("deif:", Qt::CaseInsensitive))
 		return DEIF::getDescription(errorId);
+	if (errorId.startsWith("cummins:", Qt::CaseInsensitive))
+		return Cummins::getDescription(errorId);
 	return tr("Unknown error: %1").arg(errorId);
 }
 
@@ -1009,3 +1026,62 @@ QString DEIF::getDescription(QString errorId)
 		default: return "Unknown error";
 	}
 }
+
+QString Cummins::getDescription(QString errorId)
+{
+	const auto dashIdx = errorId.indexOf("-");
+	if (dashIdx < 1)
+		return tr("Unknown error: ") + errorId;
+
+	errorId.remove(0, dashIdx + 1);
+
+	const auto parts = errorId.split('.');
+	if (parts.size() != 2)
+		return tr("Unknown error: ") + errorId;
+
+	bool ok[2];
+	const auto spn = parts[0].toUInt(&ok[0]);
+	const auto fmi = parts[1].toUInt(&ok[1]);
+	if (!ok[0] || !ok[1])
+		return tr("Unknown error: ") + errorId;
+
+	/* These SPN+FMI fault codes and their descriptions are taken
+	 * from the Cummins Customer Engineering Bulletin 00793 issued 7 April 2020 */
+	switch (SpnAndFmiToNumber(spn, fmi)) {
+		case SpnAndFmiToNumber(175,  0): return ("Code 1: Oil temperature exceeds high temperature limit threshold."); break;
+		case SpnAndFmiToNumber(1675,14): return ("Code 4: Engine did not start after 20 seconds of cranking."); break;
+		case SpnAndFmiToNumber(98,   1): return ("Code 6: Oil level below minimum operating level."); break;
+		case SpnAndFmiToNumber(2444, 0): return ("Code 12: High output voltage detected."); break;
+		case SpnAndFmiToNumber(2444, 1): return ("Code 13: Low output voltage detected."); break;
+		case SpnAndFmiToNumber(2436, 0): return ("Code 14: High output frequency detected."); break;
+		case SpnAndFmiToNumber(2436, 1): return ("Code 15: Low output frequency detected."); break;
+		case SpnAndFmiToNumber(51,   2): return ("Code 19: Throttle actuator unresponsive."); break;
+		case SpnAndFmiToNumber(8890, 0): return ("Code 25: High internal system voltage detected."); break;
+		case SpnAndFmiToNumber(8890, 1): return ("Code 26: Low internal system voltage detected."); break;
+		case SpnAndFmiToNumber(589,  2): return ("Code 27: Unable to determine internal system frequency."); break;
+		case SpnAndFmiToNumber(168,  0): return ("Code 29: Battery voltage exceeds 17V."); break;
+		case SpnAndFmiToNumber(190,  0): return ("Code 31: High engine speed detected."); break;
+		case SpnAndFmiToNumber(1675, 8): return ("Code 32: Low cranking speed detected."); break;
+		case SpnAndFmiToNumber(9206, 0): return ("Code 34: Internal inverter temperature exceeds high temperature limit threshold."); break;
+		case SpnAndFmiToNumber(190, 11): return ("Code 36: Engine stopped without detected cause."); break;
+		case SpnAndFmiToNumber(2448, 0): return ("Code 38: Output exceeded rated capacity of the generator."); break;
+		case SpnAndFmiToNumber(190,  2): return ("Code 45: Unable to determine engine speed."); break;
+		case SpnAndFmiToNumber(51,   0): return ("Code 49: Maximum engine throttle limit exceeded."); break;
+		case SpnAndFmiToNumber(1440,14): return ("Code 52: Injector or lift pump unresponsive."); break;
+		case SpnAndFmiToNumber(175,  2): return ("Code 53: Unable to determine oil temperature."); break;
+		case SpnAndFmiToNumber(105,  2): return ("Code 54: Unable to determine Manifold Air Temperature."); break;
+		case SpnAndFmiToNumber(102,  2): return ("Code 56: Unable to determine Manifold Air Pressure."); break;
+		case SpnAndFmiToNumber(2448, 6): return ("Code 67: AC output short to ground detected."); break;
+		case SpnAndFmiToNumber(3353, 4): return ("Code 81: Internal system short detected."); break;
+		case SpnAndFmiToNumber(6814, 2): return ("Code 82: Unable to determine internal vent pressure."); break;
+		case SpnAndFmiToNumber(234, 13): return ("Controller firmware or memory or software error."); break;
+
+		default:
+			return QString("Unknown SPN/FMI (%1/%2)").arg(spn).arg(fmi);
+	}
+}
+
+
+
+
+

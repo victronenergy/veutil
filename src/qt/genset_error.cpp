@@ -62,6 +62,21 @@ private:
 	DEIF() = default;
 };
 
+class Cummins
+{
+	Q_DECLARE_TR_FUNCTIONS(CUMMINS)
+
+public:
+	static QString getDescription(QString errorId);
+
+private:
+	static constexpr quint32 SpnAndFmiToNumber(quint32 spn, quint8 fmi) {
+		return spn << 8 | fmi;
+	}
+
+	Cummins() = default;
+};
+
 QString GensetError::getDescription(QString errorId, int nrOfPhases)
 {
 	if (errorId == "")
@@ -76,6 +91,8 @@ QString GensetError::getDescription(QString errorId, int nrOfPhases)
 		return CRE::getDescription(errorId);
 	if (errorId.startsWith("deif:", Qt::CaseInsensitive))
 		return DEIF::getDescription(errorId);
+	if (errorId.startsWith("cummins:", Qt::CaseInsensitive))
+		return Cummins::getDescription(errorId);
 	return tr("Unknown error: %1").arg(errorId);
 }
 
@@ -1007,5 +1024,58 @@ QString DEIF::getDescription(QString errorId)
 		case 920: return "Fail class: Controlled stop (deload + cooldown)";
 
 		default: return "Unknown error";
+	}
+}
+
+QString Cummins::getDescription(QString errorId)
+{
+	const auto dashIdx = errorId.indexOf("-");
+	if (dashIdx < 1)
+		return tr("Unknown error: ") + errorId;
+
+	errorId.remove(0, dashIdx + 1);
+
+	const auto parts = errorId.split('.');
+	if (parts.size() != 2)
+		return tr("Unknown error: ") + errorId;
+
+	bool ok[2];
+	const auto spn = parts[0].toUInt(&ok[0]);
+	const auto fmi = parts[1].toUInt(&ok[1]);
+	if (!ok[0] || !ok[1])
+		return tr("Unknown error: ") + errorId;
+
+	/* These SPN+FMI fault codes and their descriptions are taken
+	 * from the Cummins Customer Engineering Bulletin 00793 issued 7 April 2020 */
+	switch (SpnAndFmiToNumber(spn, fmi)) {
+		case SpnAndFmiToNumber(175,  0): return ("#1 Oil temp exceeds limit"); break;
+		case SpnAndFmiToNumber(1675,14): return ("#4 No start after 20 seconds"); break;
+		case SpnAndFmiToNumber(98,   1): return ("#6 Oil level below minimum"); break;
+		case SpnAndFmiToNumber(2444, 0): return ("#12 High output voltage"); break;
+		case SpnAndFmiToNumber(2444, 1): return ("#13 Low output voltage"); break;
+		case SpnAndFmiToNumber(2436, 0): return ("#14 High output frequency"); break;
+		case SpnAndFmiToNumber(2436, 1): return ("#15 Low output frequency"); break;
+		case SpnAndFmiToNumber(51,   2): return ("#19 Throttle actuator fault"); break;
+		case SpnAndFmiToNumber(8890, 0): return ("#25 High internal voltage"); break;
+		case SpnAndFmiToNumber(8890, 1): return ("#26 Low internal voltage"); break;
+		case SpnAndFmiToNumber(589,  2): return ("#27 System frequency unknown"); break;
+		case SpnAndFmiToNumber(168,  0): return ("#29 High battery voltage"); break;
+		case SpnAndFmiToNumber(190,  0): return ("#31 High engine speed"); break;
+		case SpnAndFmiToNumber(1675, 8): return ("#32 Low cranking speed"); break;
+		case SpnAndFmiToNumber(9206, 0): return ("#34 Inverter temp too high"); break;
+		case SpnAndFmiToNumber(190, 11): return ("#36 Engine stopped, unknown"); break;
+		case SpnAndFmiToNumber(2448, 0): return ("#38 Output over generator limit"); break;
+		case SpnAndFmiToNumber(190,  2): return ("#45 Engine speed unknown"); break;
+		case SpnAndFmiToNumber(51,   0): return ("#49 Throttle limit exceeded"); break;
+		case SpnAndFmiToNumber(1440,14): return ("#52 Injector/lift pump faulty"); break;
+		case SpnAndFmiToNumber(175,  2): return ("#53 Oil temp unknown"); break;
+		case SpnAndFmiToNumber(105,  2): return ("#54 Manifold Air Temp unknown"); break;
+		case SpnAndFmiToNumber(102,  2): return ("#56 MAP sensor unknown"); break;
+		case SpnAndFmiToNumber(2448, 6): return ("#67 AC output short to ground"); break;
+		case SpnAndFmiToNumber(3353, 4): return ("#81 System short detected"); break;
+		case SpnAndFmiToNumber(6814, 2): return ("#82 Vent pressure unknown"); break;
+		case SpnAndFmiToNumber(234, 13): return ("Controller error"); break;
+		default:
+			return QString("Unknown SPN/FMI (%1/%2)").arg(spn).arg(fmi);
 	}
 }

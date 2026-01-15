@@ -298,8 +298,11 @@ void VeQuickItem::setDisplayUnit(Unit::Type unit)
 	mUnitConverter = UnitConverters::instance().get(unit);
 	if (mUnitConverter) {
 		setUnit(mUnitConverter->unitToString(unit));
-	} else if (unit != Unit::Default) {
-		qWarning() << unit << "is not a valid display unit for" << mItem->uniqueId();
+	} else {
+		if (unit != Unit::Default) {
+			qWarning() << unit << "is not a valid display unit for" << mItem->uniqueId();
+		}
+		setUnit(QString());
 	}
 	emit displayUnitChanged();
 	unitConversionChanged();

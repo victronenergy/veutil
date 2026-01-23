@@ -97,6 +97,8 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 
 	VeQItem *item = settings->add(QString("Canbus/%1/Profile").arg(interface),
 								  defaultProfile, 0, mProfiles.count() - 1);
+	if (item == nullptr)
+		throw CanBusServiceInitFailed();
 	item->getValueAndChanges(this, SLOT(dbusItemChanged()));
 
 	mInterfaceItem = service->itemGetOrCreate("CanBus/Interface/" + interface);

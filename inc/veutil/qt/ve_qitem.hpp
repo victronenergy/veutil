@@ -370,6 +370,7 @@ public:
 signals:
 	void dynamicPropertyChanged(char const *name, QVariant var);
 	void valueChanged(QVariant var);
+	void getValueResult(VeQItemEvent const *error);
 	void setValueResult(VeQItemEvent const *error);
 	void textChanged(QString text);
 	void seenChanged();
@@ -403,6 +404,7 @@ protected:
 	virtual void setParent(QObject *parent);
 
 	void reportSetValueResult(VeQItemEvent const &ev) { emit setValueResult(&ev); }
+	void reportGetValueResult(VeQItemEvent const &ev) { emit getValueResult(&ev); }
 
 protected slots:
 	void receiverDestroyed(QObject *obj);

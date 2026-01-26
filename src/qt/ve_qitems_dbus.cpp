@@ -284,8 +284,13 @@ void VeQItemDbus::valueObtained(QDBusPendingCallWatcher *call)
 		QDBusError error(reply.error());
 
 		state = Offline;
-		if (error.type() != QDBusError::UnknownObject)
+		if (error.type() != QDBusError::UnknownObject) {
 			qDebug() << "Error value:" << reply.error() << dbusServiceName() << dbusPath();
+
+			VeQItemEvent err(VeQItemEvent::VE_QITEM_BUS_ERROR);
+			err.setWhat(error.message());
+			reportGetValueResult(err);
+		}
 	} else {
 		value = reply.value().variant();
 		demarshallVariantForQml(value, mSignature);

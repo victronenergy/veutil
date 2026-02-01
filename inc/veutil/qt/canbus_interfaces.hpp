@@ -22,8 +22,6 @@ private:
 
 struct CanBusServiceInitFailed : std::exception
 {
-	using std::exception::exception;
-
 	const char* what() const noexcept override {
 		return "Failed to create / get the CAN-bus settings";
 	}

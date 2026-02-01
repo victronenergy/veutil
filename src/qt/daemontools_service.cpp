@@ -246,13 +246,33 @@ void DaemonToolsService::waitTillDown()
 	}
 }
 
+bool DaemonToolsService::isUp(bool *ok)
+{
+	*ok = false;
+
+	QString const statusFile = QString("%1/supervise/status").arg(mServicePath);
+	QFile file(statusFile);
+	if (!file.open(QIODevice::ReadOnly))
+		return false;
+
+	QByteArray const statusData = file.readAll();
+	if (statusData.size() < 16)
+		return false;
+
+	quint32 pid = static_cast<unsigned char>(statusData[15]) << 24 |
+				  static_cast<unsigned char>(statusData[14]) << 16 |
+				  static_cast<unsigned char>(statusData[13]) << 8 |
+				  static_cast<unsigned char>(statusData[12]);
+
+	*ok = true;
+	return pid != 0;
+}
+
 bool DaemonToolsService::isUp()
 {
-	QProcess proc;
-	proc.start("svstat", QStringList() << mServicePath);
-	proc.waitForFinished();
-	QString output(proc.readAllStandardOutput());
-	return output.startsWith(mServicePath + ": up ") && !output.contains(", want down");
+	bool ok;
+	bool up = isUp(&ok);
+	return ok && up;
 }
 
 void DaemonToolsService::onSveCtlFinished(int exitCode)

@@ -44,6 +44,7 @@ public:
 
 	void waitTillDown();
 	bool isUp();
+	bool isUp(bool *ok);
 
 	void install();
 	void remove();

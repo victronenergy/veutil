@@ -1,3 +1,5 @@
+#include <thread>
+
 #include <QDir>
 #include <QFile>
 #include <QProcess>
@@ -230,20 +232,22 @@ void DaemonToolsService::execSvc(QStringList arguments)
 
 // Not the most polite call since it blocks, but only used when changing CAN-bus profiles
 // to make sure the interface is not used before changing bitrate. The service is typically
-// down the first time it is checked, so this shouldnt take long.
-void DaemonToolsService::waitTillDown()
+// down the first time it is checked, so this shouldn't take long.
+bool DaemonToolsService::waitTillDown(const std::chrono::seconds timeout)
 {
-	if (!QDir(mServicePath).exists())
-		return;
+	using namespace std::chrono;
 
-	for (;;) {
-		QProcess proc;
-		proc.start("svstat", QStringList() << mServicePath);
-		proc.waitForFinished();
-		QString output(proc.readAllStandardOutput());
-		if (output.startsWith(mServicePath + ": down "))
-			break;
+	time_point limit = timeout == 0s ? time_point<steady_clock>::max() : steady_clock::now() + timeout;
+	while (steady_clock::now() < limit) {
+		if (!isUp()) {
+			qDebug() << "[Service] DBus service" << mServicePath << "is down";
+			return true;
+		}
+
+		std::this_thread::sleep_for(10ms);
 	}
+
+	return false;
 }
 
 bool DaemonToolsService::isUp(bool *ok)

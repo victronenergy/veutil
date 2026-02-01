@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+
 #include <QFile>
 #include <QObject>
 #include <QProcess>
@@ -42,7 +44,8 @@ public:
 	void start();
 	void stop();
 
-	void waitTillDown();
+	bool waitTillDown(const std::chrono::seconds timeout = std::chrono::seconds(0));
+
 	bool isUp();
 	bool isUp(bool *ok);
 

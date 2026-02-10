@@ -74,6 +74,7 @@ const VeChargerError ChargerError::errors[] =
 	{ CHARGER_ERROR_LINK_PHASE_OVERLOAD,					QT_TR_NOOP("Too many units in parallel") },
 	{ CHARGER_ERROR_LINK_CONFIG_NOT_SUPPORTED,				QT_TR_NOOP("Network misconfigured") },
 	{ CHARGER_ERROR_LINK_NETWORK_INCOMPLETE,				QT_TR_NOOP("Network incomplete") },
+	{ CHARGER_ERROR_LINK_SETTINGS_SYNC_ISSUE,				QT_TR_NOOP("Settings sync disabled") },
 
 	{ CHARGER_ERROR_MEMORY_WRITE_FAILURE,					QT_TR_NOOP("Memory write error") },
 	{ CHARGER_ERROR_CPU_TEMP_TOO_HIGH,						QT_TR_NOOP("CPU temperature too high") },

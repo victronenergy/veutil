@@ -81,7 +81,7 @@
 #define CHARGER_ERROR_LINK_PHASE_OVERLOAD					74  /*!< Error   / Phase overload */
 #define CHARGER_ERROR_LINK_CONFIG_NOT_SUPPORTED				75  /*!< Error   / Network misconfigured */
 #define CHARGER_ERROR_LINK_NETWORK_INCOMPLETE				76  /*!< Error   / Insufficient inverters for networked operation (check can cable or settings) */
-#define CHARGER_ERROR_77									77  /*!< free */
+#define CHARGER_ERROR_LINK_SETTINGS_SYNC_ISSUE				77  /*!< Error   / Settings sync disabled */
 #define CHARGER_ERROR_78									78  /*!< free */
 #define CHARGER_ERROR_79									79  /*!< free */
 #define CHARGER_ERROR_INPUT_SHUTDOWN_OVERVOLT_MAN_RST		80  /*!< Error   / Input shutdown (converter broken, short input to avoid battery overcharge) caused by slow overvoltage -> manual reset allowed after power-cycle */

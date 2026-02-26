@@ -40,7 +40,10 @@ public:
 
 		// Altitude
 		Metre,
+		Kilometre,
 		Foot,
+		Mile,
+		NauticalMile,
 	};
 };
 

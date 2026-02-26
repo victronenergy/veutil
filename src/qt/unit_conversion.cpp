@@ -137,7 +137,10 @@ SpeedConverter::SpeedConverter() :
 AltitudeConverter::AltitudeConverter() :
 	UnitConverter(Unit::Metre, {
 		{ Unit::Metre, new UnitBase("m") },
+		{ Unit::Kilometre, new UnitLinear("km", 0.001) },
 		{ Unit::Foot, new UnitLinear("ft", 3.28084) },
+		{ Unit::Mile, new UnitLinear("mi", 0.000621371) },
+		{ Unit::NauticalMile, new UnitLinear("NM", 0.000539957) },
 	}) {}
 
 const UnitConverter *UnitConverters::get(Unit::Type unit)

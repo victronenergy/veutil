@@ -212,10 +212,32 @@ public:
 		return value;
 	}
 
+	enum Fetch {
+		DoFetch,
+		DoNotFetch
+	};
+
 	/**
 	 * Invokes the slot member with the current value, and future onChangeEvents.
 	 */
 	void getValueAndChanges(QObject *obj, const char *member, bool fetch = true, bool queued = false);
+
+	template<typename F>
+	void getValueAndChanges(typename QtPrivate::FunctionPointer<F>::Object *obj, F &&method,
+							enum Fetch fetch = DoFetch, Qt::ConnectionType type = Qt::AutoConnection)
+	{
+		connect(this, &VeQItem::valueChanged, obj, method);
+		updateWatched();
+
+		if (fetch == DoFetch) {
+			connect(this, &VeQItem::initValue, obj, method, type);
+			emit initValue(getValue());
+			disconnect(this, &VeQItem::initValue, obj, method);
+		}
+
+		// See getValueAndChanges. kept equal for now.
+		connect(obj, &QObject::destroyed, this, &VeQItem::receiverDestroyed);
+	}
 
 	/**
 	 * Like getValue, but a human representable version.

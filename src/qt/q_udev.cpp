@@ -101,7 +101,7 @@ bool QUdevMonitor::enableReceiving()
 	}
 
 	mNotifier = new QSocketNotifier(fd, QSocketNotifier::Read, this);
-	connect(mNotifier, SIGNAL(activated(int)), SLOT(handleUdevReceive()));
+	connect(mNotifier, &QSocketNotifier::activated, this, &QUdevMonitor::handleUdevReceive);
 
 	return true;
 }

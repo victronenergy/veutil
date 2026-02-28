@@ -288,13 +288,13 @@ void VeQItemExportedDbusService::processPending()
 
 void VeQItemExportedDbusService::connectItem(VeQItem *item)
 {
-	connect(item, SIGNAL(valueChanged(QVariant)), this, SLOT(onValueChanged()));
-	connect(item, SIGNAL(textChanged(QString)), this, SLOT(onTextChanged()));
-	connect(item, SIGNAL(dynamicPropertyChanged(const char*,QVariant)),
-			this, SLOT(onDynamicPropertyChanged(const char*)));
+	connect(item, &VeQItem::valueChanged, this, &VeQItemExportedDbusService::onValueChanged);
+	connect(item, &VeQItem::textChanged, this, &VeQItemExportedDbusService::onTextChanged);
+	connect(item, &VeQItem::dynamicPropertyChanged,
+			this, &VeQItemExportedDbusService::onDynamicPropertyChanged);
 
-	connect(item, SIGNAL(childAdded(VeQItem*)), this, SLOT(onChildAdded(VeQItem *)));
-	connect(item, SIGNAL(childAboutToBeRemoved(VeQItem*)), this, SLOT(onChildAboutToBeRemoved(VeQItem *)));
+	connect(item, &VeQItem::childAdded, this, &VeQItemExportedDbusService::onChildAdded);
+	connect(item, &VeQItem::childAboutToBeRemoved, this, &VeQItemExportedDbusService::onChildAboutToBeRemoved);
 
 	for (VeQItem *child: item->itemChildren())
 		connectItem(child);

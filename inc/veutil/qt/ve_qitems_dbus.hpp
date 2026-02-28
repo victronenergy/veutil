@@ -41,6 +41,8 @@ protected:
 	bool dbusIsServiceRegistered();
 	QDBusConnection &dbusConnection();
 
+	typedef void (VeQItemDbus::*DbusCallback)(QDBusPendingCallWatcher *call);
+
 private slots:
 	void valueObtained(QDBusPendingCallWatcher *call);
 	void textObtained(QDBusPendingCallWatcher *call);
@@ -56,7 +58,7 @@ private slots:
 
 private:
 	QVariant itemProperty(const char *name, bool force);
-	QDBusPendingCallWatcher *asyncCall(const QString &method, char const *returnMethod);
+	QDBusPendingCallWatcher *asyncCall(const QString &method, DbusCallback returnMethod);
 
 	void propertyObtained(const char *name, QDBusPendingCallWatcher *call);
 	void demarshallVariantForQml(QVariant &variant, QString &signature);
@@ -112,7 +114,7 @@ private:
 };
 
 
-class VeDbusServicePrivate : QObject, protected QDBusContext
+class VeDbusServicePrivate : public QObject, protected QDBusContext
 {
 	Q_OBJECT
 

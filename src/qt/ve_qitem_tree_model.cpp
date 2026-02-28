@@ -48,11 +48,11 @@ void VeQItemTreeModel::onValueChanged()
 void VeQItemTreeModel::setupValueChanges(VeQItem *item)
 {
 	// qDebug() << "connect" << item->uniqueId();
-	this->connect(item, SIGNAL(valueChanged(QVariant)), SLOT(onValueChanged()));
-	this->connect(item, SIGNAL(childAboutToBeAdded(VeQItem*)), SLOT(onChildAboutTobeAdded(VeQItem*)));
-	this->connect(item, SIGNAL(childAdded(VeQItem *)), SLOT(onChildAdded(VeQItem *)));
-	this->connect(item, SIGNAL(childAboutToBeRemoved(VeQItem*)), SLOT(onItemAboutToBeRemoved(VeQItem*)));
-	this->connect(item, SIGNAL(childRemoved(VeQItem*)), SLOT(onItemRemoved(VeQItem*)));
+	connect(item, &VeQItem::valueChanged, this, &VeQItemTreeModel::onValueChanged);
+	connect(item, &VeQItem::childAboutToBeAdded, this, &VeQItemTreeModel::onChildAboutTobeAdded);
+	connect(item, &VeQItem::childAdded, this, &VeQItemTreeModel::onChildAdded);
+	connect(item, &VeQItem::childAboutToBeRemoved, this, &VeQItemTreeModel::onItemAboutToBeRemoved);
+	connect(item, &VeQItem::childRemoved, this, &VeQItemTreeModel::onItemRemoved);
 }
 
 void VeQItemTreeModel::onChildAboutTobeAdded(VeQItem *item)

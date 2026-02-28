@@ -17,7 +17,7 @@ bool VeQItemLoader::addItem(VeQItem *item, QVariant value)
 		return true;
 
 	item->produceValue(value, VeQItem::Preview);
-	connect(item, SIGNAL(stateChanged(VeQItem::State)), this, SLOT(onItemStateChange()));
+	connect(item, &VeQItem::stateChanged, this, &VeQItemLoader::onItemStateChange);
 	mPendingItems.append(item);
 
 	return true;

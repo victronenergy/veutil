@@ -31,8 +31,8 @@ void VeQItemTableModel::addItem(VeQItem *item)
 		if ((mFlags & DontAddItem) == 0) {
 			setupValueChanges(item, AddAllChildren);
 		} else {
-			this->connect(item, SIGNAL(childAdded(VeQItem *)), SLOT(onRecursiveChildAdded(VeQItem *)));
-			this->connect(item, SIGNAL(childAboutToBeRemoved(VeQItem*)), SLOT(onItemAboutToBeRemoved(VeQItem*)));
+			connect(item, &VeQItem::childAdded, this, &VeQItemTableModel::onRecursiveChildAdded);
+			connect(item, &VeQItem::childAboutToBeRemoved, this, &VeQItemTableModel::onItemAboutToBeRemoved);
 		}
 		foreach (VeQItem *child, item->findChildren<VeQItem*>())
 			setupValueChanges(child, AddAllChildren);
@@ -42,8 +42,8 @@ void VeQItemTableModel::addItem(VeQItem *item)
 		if ((mFlags & DontAddItem) == 0) {
 			setupValueChanges(item, AddChildren);
 		} else {
-			this->connect(item, SIGNAL(childAdded(VeQItem *)), SLOT(onChildAdded(VeQItem *)));
-			this->connect(item, SIGNAL(childAboutToBeRemoved(VeQItem*)), SLOT(onItemAboutToBeRemoved(VeQItem*)));
+			connect(item, &VeQItem::childAdded, this, &VeQItemTableModel::onChildAdded);
+			connect(item, &VeQItem::childAboutToBeRemoved, this, &VeQItemTableModel::onItemAboutToBeRemoved);
 		}
 		foreach (VeQItem *child, item->itemChildren())
 			setupValueChanges(child);
@@ -103,11 +103,11 @@ void VeQItemTableModel::onDynamicPropertyChanged(const char *name)
 void VeQItemTableModel::setupValueChanges(VeQItem *item, Flags options, int row)
 {
 	if (options == AddAllChildren)
-		this->connect(item, SIGNAL(childAdded(VeQItem *)), SLOT(onRecursiveChildAdded(VeQItem *)));
+		connect(item, &VeQItem::childAdded, this, &VeQItemTableModel::onRecursiveChildAdded);
 	else if (options == AddChildren)
-		this->connect(item, SIGNAL(childAdded(VeQItem *)), SLOT(onChildAdded(VeQItem *)));
+		connect(item, &VeQItem::childAdded, this, &VeQItemTableModel::onChildAdded);
 
-	this->connect(item, SIGNAL(childAboutToBeRemoved(VeQItem*)), SLOT(onItemAboutToBeRemoved(VeQItem*)));
+	connect(item, &VeQItem::childAboutToBeRemoved, this, &VeQItemTableModel::onItemAboutToBeRemoved);
 
 	// flatten the tree for the table view, only interested in the leafs..
 	if (!item->isLeaf() && (mFlags & AddNonLeaves) == 0)
@@ -115,11 +115,11 @@ void VeQItemTableModel::setupValueChanges(VeQItem *item, Flags options, int row)
 
 	// Use getValueAndChanges instead of connect, so values are requested after a disconnect.
 	// Don't call the signal directly, since that would lead to a cellChanged signal.
-	item->getValueAndChanges(this, SLOT(onValueChanged()), false);
-	this->connect(item, SIGNAL(stateChanged(VeQItem::State)), SLOT(onStateChanged()));
-	this->connect(item, SIGNAL(textChanged(QString)), SLOT(onTextChanged()));
-	this->connect(item, SIGNAL(textStateChanged(VeQItem::State)), SLOT(onTextStateChanged()));
-	this->connect(item, SIGNAL(dynamicPropertyChanged(const char*,QVariant)), SLOT(onDynamicPropertyChanged(const char*)));
+	item->getValueAndChanges(this, &VeQItemTableModel::onValueChanged, VeQItem::DoNotFetch);
+	connect(item, &VeQItem::stateChanged, this, &VeQItemTableModel::onStateChanged);
+	connect(item, &VeQItem::textChanged, this, &VeQItemTableModel::onTextChanged);
+	connect(item, &VeQItem::textStateChanged, this, &VeQItemTableModel::onTextStateChanged);
+	connect(item, &VeQItem::dynamicPropertyChanged, this, &VeQItemTableModel::onDynamicPropertyChanged);
 
 	appendItem(item, row);
 }

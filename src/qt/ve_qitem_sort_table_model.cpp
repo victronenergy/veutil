@@ -21,8 +21,8 @@ void VeQItemSortTableModel::updateModel()
 	if (mTableModel)
 		mTableModel->disconnect(this);
 	setSourceModel(mTableModel);
-	connect(this, SIGNAL(rowsRemoved(QModelIndex, int, int)), SIGNAL(rowCountChanged()));
-	connect(this, SIGNAL(rowsInserted(QModelIndex, int, int)), SIGNAL(rowCountChanged()));
+	connect(this, &QAbstractItemModel::rowsRemoved, this, &VeQItemSortTableModel::rowCountChanged);
+	connect(this, &QAbstractItemModel::rowsInserted, this, &VeQItemSortTableModel::rowCountChanged);
 	emit rowCountChanged();
 }
 

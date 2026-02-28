@@ -124,7 +124,7 @@ public:
 
 	void enableReceiving()
 	{
-		connect(mMonitor, SIGNAL(udevEvent(QUdevAction, struct udev_device *)), SLOT(onUdevEvent(QUdevAction, struct udev_device *)));
+		connect(mMonitor, &QUdevMonitor::udevEvent, this, &QUdevExample::onUdevEvent);
 		mMonitor->filterAddMatchSubsytemDevtype("net");
 		mMonitor->filterAddMatchSubsytemDevtype("tty");
 		mMonitor->enableReceiving();

@@ -258,18 +258,18 @@ bool VeQItemDbus::introspect()
 	QList<QVariant> argumentList;
 	QDBusPendingReply<QString> call = iface.asyncCallWithArgumentList("Introspect", argumentList);
 	QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(call, this);
-	this->connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), SLOT(introspectObtained(QDBusPendingCallWatcher*)));
+	connect(watcher, &QDBusPendingCallWatcher::finished, this, &VeQItemDbus::introspectObtained);
 
 	return true;
 }
 #endif
 
-QDBusPendingCallWatcher *VeQItemDbus::asyncCall(const QString &method, const char *returnMethod)
+QDBusPendingCallWatcher *VeQItemDbus::asyncCall(const QString &method, DbusCallback returnMethod)
 {
 	QDBusMessage msg = QDBusMessage::createMethodCall(mDbusService->owner(), dbusPath(), "com.victronenergy.BusItem", method);
 	QDBusPendingCall async = dbusConnection().asyncCall(msg);
 	QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(async, this);
-	connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), returnMethod);
+	connect(watcher, &QDBusPendingCallWatcher::finished, this, returnMethod);
 
 	return watcher;
 }
@@ -317,7 +317,7 @@ QVariant VeQItemDbus::getValue(bool force)
 		}
 
 		setState(Requested);
-		asyncCall("GetValue", SLOT(valueObtained(QDBusPendingCallWatcher*)));
+		asyncCall("GetValue", &VeQItemDbus::valueObtained);
 	}
 
 	return mValue;
@@ -362,7 +362,7 @@ QString VeQItemDbus::getText(bool force)
 		}
 
 		setTextState(Requested);
-		asyncCall("GetText", SLOT(textObtained(QDBusPendingCallWatcher*)));
+		asyncCall("GetText", &VeQItemDbus::textObtained);
 	}
 
 	return mText;
@@ -410,20 +410,20 @@ QVariant VeQItemDbus::itemProperty(const char *name, bool force)
 	if (mPropertyState[name] == Idle || force) {
 		QString method;
 		bool *pending;
-		const char *slot;
+		DbusCallback slot;
 
 		if (QLatin1String(name) == "min") {
 			method = "GetMin";
 			pending = &mRequestMinWhenOnline;
-			slot = SLOT(minObtained(QDBusPendingCallWatcher*));
+			slot = &VeQItemDbus::minObtained;
 		} else if (QLatin1String(name) == "max") {
 			method = "GetMax";
 			pending = &mRequestMaxWhenOnline;
-			slot = SLOT(maxObtained(QDBusPendingCallWatcher*));
+			slot = &VeQItemDbus::maxObtained;
 		} else if (QLatin1String(name) == "defaultValue") {
 			method = "GetDefault";
 			pending = &mRequestDefaultWhenOnline;
-			slot = SLOT(defaultObtained(QDBusPendingCallWatcher*));
+			slot = &VeQItemDbus::defaultObtained;
 		} else {
 			return property(name);
 		}
@@ -489,7 +489,7 @@ int VeQItemDbus::setValue(const QVariant &value)
 	}
 	QDBusPendingCall set = dbusConnection().asyncCall(msg);
 	QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(set, this);
-	this->connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), SLOT(setValueDone(QDBusPendingCallWatcher*)));
+	connect(watcher, &QDBusPendingCallWatcher::finished, this, &VeQItemDbus::setValueDone);
 
 	return 0;
 }
@@ -611,7 +611,7 @@ void VeDbusServicePrivate::getItems()
 		QDBusMessage msg = QDBusMessage::createMethodCall(owner(), "/", "com.victronenergy.BusItem", "GetItems");
 		QDBusPendingCall async = dbusConnection().asyncCall(msg);
 		QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(async, this);
-		connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), SLOT(itemsObtained(QDBusPendingCallWatcher*)));
+		connect(watcher, &QDBusPendingCallWatcher::finished, this, &VeDbusServicePrivate::itemsObtained);
 	}
 }
 
@@ -743,7 +743,7 @@ bool VeQItemDbusProducer::open(const QDBusConnection &dbusConnection)
 
 	if (mFindVictronServices) {
 		QDBusConnectionInterface *interface = mDbus.interface();
-		connect(interface, SIGNAL(serviceOwnerChanged(QString,QString,QString)), this, SLOT(onServiceOwnerChanged(QString,QString,QString)));
+		connect(interface, &QDBusConnectionInterface::serviceOwnerChanged, this, &VeQItemDbusProducer::onServiceOwnerChanged);
 
 		QStringList registerServices = interface->registeredServiceNames();
 		foreach (QString name, registerServices) {

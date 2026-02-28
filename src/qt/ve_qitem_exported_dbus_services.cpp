@@ -11,8 +11,8 @@ VeQItemExportedDbusServices::VeQItemExportedDbusServices(VeQItem *root, QObject 
 {
 	qDBusRegisterMetaType<ItemMap>();
 
-	connect(mRoot, SIGNAL(childAdded(VeQItem *)), this, SLOT(onChildAdded(VeQItem *)));
-	connect(mRoot, SIGNAL(childAboutToBeRemoved(VeQItem *)), this, SLOT(onChildRemoved(VeQItem *)));
+	connect(mRoot, &VeQItem::childAdded, this, &VeQItemExportedDbusServices::onChildAdded);
+	connect(mRoot, &VeQItem::childAboutToBeRemoved, this, &VeQItemExportedDbusServices::onChildRemoved);
 }
 
 bool VeQItemExportedDbusServices::open(const QString &address)
@@ -24,7 +24,7 @@ bool VeQItemExportedDbusServices::open(const QString &address)
 
 void VeQItemExportedDbusServices::onChildAdded(VeQItem *item)
 {
-	connect(item, SIGNAL(stateChanged(VeQItem::State)), this, SLOT(onRootStateChanged()));
+	connect(item, &VeQItem::stateChanged, this, &VeQItemExportedDbusServices::onRootStateChanged);
 
 	if (item->getState() != VeQItem::Offline && item->getState() != VeQItem::Idle)
 		addChild(item);

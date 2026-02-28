@@ -123,7 +123,7 @@ void DaemonToolsService::initSettings(VeQItemSettings *settings)
 	// the object is completely constructed. Otherwise virtual methods will not be call
 	// the overridden one!
 	for (VeQItem *item: mDbusItemList)
-		item->getValueAndChanges(this, SLOT(dbusItemChanged()), true, true);
+		item->getValueAndChanges(this, &DaemonToolsService::dbusItemChanged, VeQItem::DoFetch, Qt::QueuedConnection);
 }
 
 void DaemonToolsService::enable()
@@ -318,8 +318,8 @@ void DaemonToolsService::spawnSveCtl(QStringList const &args)
 	// followed by free. So let it free itself. This class its slot will be
 	// disconnected in the desctructor and the free will remain connected.
 	QProcess *proc = new QProcess();
-	connect(proc, SIGNAL(finished(int)), proc, SLOT(deleteLater()));
-	connect(proc, SIGNAL(finished(int)), SLOT(onSveCtlFinished(int)));
+	connect(proc, &QProcess::finished, proc, &QObject::deleteLater);
+	connect(proc, &QProcess::finished, this, &DaemonToolsService::onSveCtlFinished);
 	proc->start("/opt/victronenergy/venus-platform/svectl", args);
 }
 

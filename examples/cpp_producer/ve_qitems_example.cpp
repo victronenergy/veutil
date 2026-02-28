@@ -16,8 +16,8 @@ VeQItemsExample::VeQItemsExample(VeQItem *root, QString id, QObject *parent) :
 	mQItemB = mProducerRoot->itemGetOrCreate("This/Is/Item/B");
 
 	startTimer(1000);
-	QTimer::singleShot(3000, this, SLOT(deleteItem()));
-	QTimer::singleShot(5000, this, SLOT(createDelayItem()));
+	QTimer::singleShot(3000, this, &VeQItemsExample::deleteItem);
+	QTimer::singleShot(5000, this, &VeQItemsExample::createDelayItem);
 }
 
 void VeQItemsExample::timerEvent(QTimerEvent *event)

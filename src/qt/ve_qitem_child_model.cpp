@@ -133,12 +133,12 @@ void VeQItemChildModel::setSourceModel(QAbstractItemModel *model)
 		for (int n = 0; n < mTableModel->rowCount(); n++)
 			addOneChild(mTableModel->index(n, 0));
 
-		connect(mTableModel, SIGNAL(rowsInserted(QModelIndex,int,int)), SLOT(onRowsInserted(QModelIndex,int,int)));
-		connect(mTableModel, SIGNAL(rowsRemoved(QModelIndex,int,int)), SLOT(onRowsRemoved(QModelIndex,int,int)));
-		connect(mTableModel, SIGNAL(modelReset()), SLOT(onModelReset()));
-		connect(mTableModel, SIGNAL(layoutAboutToBeChanged()), SLOT(onLayoutAboutToBeChanged()));
-		connect(mTableModel, SIGNAL(layoutChanged()), SLOT(onLayoutChanged()));
-		connect(mTableModel, SIGNAL(destroyed()), this, SLOT(onSourceModelDestroyed()));
+		connect(mTableModel, &QAbstractItemModel::rowsInserted, this, &VeQItemChildModel::onRowsInserted);
+		connect(mTableModel, &QAbstractItemModel::rowsRemoved, this, &VeQItemChildModel::onRowsRemoved);
+		connect(mTableModel, &QAbstractItemModel::modelReset, this, &VeQItemChildModel::onModelReset);
+		connect(mTableModel, &QAbstractItemModel::layoutAboutToBeChanged, this, &VeQItemChildModel::onLayoutAboutToBeChanged);
+		connect(mTableModel, &QAbstractItemModel::layoutChanged, this, &VeQItemChildModel::onLayoutChanged);
+		connect(mTableModel, &QObject::destroyed, this, &VeQItemChildModel::onSourceModelDestroyed);
 	}
 
 	emit sourceModelChanged();
@@ -278,7 +278,7 @@ void VeQItemChildModel::createSortDelegate(int n)
 		return;
 	}
 
-	connect(delegate, SIGNAL(valueChanged()), SLOT(onSortDelegateValueChanged()));
+	connect(delegate, &VeQItemSortDelegate::valueChanged, this, &VeQItemChildModel::onSortDelegateValueChanged);
 }
 
 void VeQItemChildModel::addOneChild(const QModelIndex &index)

@@ -218,7 +218,7 @@ protected:
 private:
 	void setup()
 	{
-		mItem->getValueAndChanges(this, SLOT(onValueChanged()));
+		mItem->getValueAndChanges(this, &VeQuickItem::onValueChanged);
 
 		connect(mItem, &VeQItem::stateChanged, this, &VeQuickItem::stateChanged);
 		emit stateChanged();
@@ -232,11 +232,8 @@ private:
 		emit seenChanged();
 
 		connect(mItem, &QObject::destroyed, this, &VeQuickItem::onItemDestroyed);
-
 		connect(mItem, &VeQItem::dynamicPropertyChanged, this, &VeQuickItem::onDynamicPropertyChanged);
-
 		connect(mItem, &VeQItem::setValueResult, this, &VeQuickItem::setValueResult);
-
 		connect(mItem, &VeQItem::sensitiveChanged, this, &VeQuickItem::sensitiveChanged);
 
 		if (mIsSetting) {

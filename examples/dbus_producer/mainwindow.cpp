@@ -22,13 +22,13 @@ MainWindow::~MainWindow()
 
 void MainWindow::onChildAdded(VeQItem *item)
 {
-	connect(item, SIGNAL(childAdded(VeQItem *)), SLOT(onChildAdded(VeQItem *)));
+	connect(item, &VeQItem::childAdded, this, &MainWindow::onChildAdded);
 
 	if (mTraceValueChanges)
-		connect(item, SIGNAL(valueChanged(QVariant)), SLOT(onValueChanged()));
+		connect(item, &VeQItem::valueChanged, this, &MainWindow::onValueChanged);
 
 	if (mTraceTextChanges)
-		connect(item, SIGNAL(textChanged(QString)), SLOT(onTextChanged()));
+		connect(item, &VeQItem::textChanged, this, &MainWindow::onTextChanged);
 
 	if (!mIntrospect)
 		return;
@@ -65,7 +65,7 @@ void MainWindow::open()
 	mTraceValueChanges = true;
 	mTraceTextChanges = true;
 
-	connect(mRoot, SIGNAL(childAdded(VeQItem *)), SLOT(onChildAdded(VeQItem *)));
+	connect(mRoot, &VeQItem::childAdded, this, &MainWindow::onChildAdded);
 
 	if (tableview) {
 		mTableModel.addItem(mRoot);

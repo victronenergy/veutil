@@ -60,7 +60,7 @@ void VeQItem::getValueAndChanges(QObject *obj, const char *member, bool fetch, b
 	// there is BUG in qt 4, see https://bugreports.qt.io/browse/QTBUG-4844
 	// which causes disconnectNotify not to be called when the receiver is deleted.
 	// Hence monitor such deletions and explicitly disconnect the receiver upon destruction.
-	connect(obj, SIGNAL(destroyed(QObject*)), SLOT(receiverDestroyed(QObject*)));
+	connect(obj, &QObject::destroyed, this, &VeQItem::receiverDestroyed);
 }
 
 void VeQItem::commitPreview()
@@ -500,10 +500,9 @@ VeQItemProxy::VeQItemProxy(VeQItem *srcItem) :
 	mSrcItem(srcItem)
 {
 	mIsLeaf = true;
-	connect(mSrcItem, SIGNAL(valueChanged(QVariant)), SIGNAL(valueChanged(QVariant)));
-	connect(mSrcItem, SIGNAL(textChanged(QString)), SIGNAL(textChanged(QString)));
-	connect(mSrcItem, SIGNAL(dynamicPropertyChanged(char const *,QVariant)),
-			SIGNAL(dynamicPropertyChanged(char const *,QVariant)));
+	connect(mSrcItem, &VeQItem::valueChanged, this, &VeQItem::valueChanged);
+	connect(mSrcItem, &VeQItem::textChanged, this, &VeQItem::textChanged);
+	connect(mSrcItem, &VeQItem::dynamicPropertyChanged, this, &VeQItem::dynamicPropertyChanged);
 }
 
 #pragma GCC diagnostic push

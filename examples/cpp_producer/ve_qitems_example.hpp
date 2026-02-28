@@ -32,7 +32,7 @@ public:
 		setState(Storing);
 
 		// Emulate that it will take some time for the item to be applied
-		QTimer::singleShot(1000, this, SLOT(setSynchronizedState()));
+		QTimer::singleShot(1000, this, &VeQItemExample::setSynchronizedState);
 
 		return 0;
 	}
@@ -86,7 +86,7 @@ public:
 	VeQItemConsumer(VeQItem *item, QObject *parent = 0) :
 		QObject(parent)
 	{
-		item->getValueAndChanges(this, SLOT(onValueChanged()));
+		item->getValueAndChanges(this, &VeQItemConsumer::onValueChanged);
 		startTimer(4000);
 	}
 

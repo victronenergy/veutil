@@ -99,12 +99,12 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 								  defaultProfile, 0, mProfiles.count() - 1);
 	if (item == nullptr)
 		throw CanBusServiceInitFailed();
-	item->getValueAndChanges(this, SLOT(dbusItemChanged()));
+	item->getValueAndChanges(this, &CanBusProfiles::dbusItemChanged);
 
 	mInterfaceItem = service->itemGetOrCreate("CanBus/Interface/" + interface);
 	mInterfaceItem->itemAddChild("Statistics", new VeQItemCanStats(interface));
 
-	connect(&mTimer, SIGNAL(timeout()), SLOT(onPollTimer()));
+	connect(&mTimer, &QTimer::timeout, this, &CanBusProfiles::onPollTimer);
 	onPollTimer();
 	mTimer.start(60000);
 }

@@ -2,19 +2,12 @@
 
 #include <QtGlobal>
 
-#ifdef QT_QML_LIB
 #include <QQmlComponent>
 #include <QQuickItem>
-#define QDeclarativeComponent QQmlComponent
-#define QDeclarativeItem QQuickItem
-#else
-#include <QDeclarativeComponent>
-#include <QDeclarativeItem>
-#endif
 
 #include <veutil/qt/ve_qitem_table_model.hpp>
 
-class VeQItemSortDelegate : public  QDeclarativeItem
+class VeQItemSortDelegate : public QQuickItem
 {
 	Q_OBJECT
 	Q_PROPERTY(QVariant sortValue READ sortValue WRITE setValue NOTIFY valueChanged)
@@ -40,7 +33,7 @@ class VeQItemChildModel : public VeQItemTableModel
 	Q_OBJECT
 	Q_PROPERTY(QAbstractItemModel *model READ sourceModel WRITE setSourceModel NOTIFY sourceModelChanged)
 	Q_PROPERTY(QString childId READ childId WRITE setChildId NOTIFY childIdChanged)
-	Q_PROPERTY(QDeclarativeComponent *sortDelegate READ sortDelegate WRITE setSortDelegate NOTIFY sortDelegateChanged)
+	Q_PROPERTY(QQmlComponent *sortDelegate READ sortDelegate WRITE setSortDelegate NOTIFY sortDelegateChanged)
 	Q_PROPERTY(int sortValueColumn READ sortValueColumn NOTIFY sortValueColumnChanged)
 
 public:
@@ -53,15 +46,10 @@ public:
 	QString childId() { return mChildId; }
 	void setChildId(const QString &childId);
 
-	QDeclarativeComponent * sortDelegate() const { return mSortDelegate; }
-	void setSortDelegate(QDeclarativeComponent *delegate);
+	QQmlComponent * sortDelegate() const { return mSortDelegate; }
+	void setSortDelegate(QQmlComponent *delegate);
 
-// NOTE: roleNames doesn't exists in qt4 as virtual function
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-	QHash<int, QByteArray> roleNames() const;
-#else
 	QHash<int, QByteArray> roleNames() const override;
-#endif
 	QVariant data(const QModelIndex &index, int role) const override;
 
 	int sortValueColumn() const { return mSortValueColumn; }
@@ -91,7 +79,7 @@ protected:
 private:
 	QAbstractItemModel *mTableModel;
 	QString mChildId;
-	QDeclarativeComponent *mSortDelegate;
+	QQmlComponent *mSortDelegate;
 	int mSortValueColumn;
 	QVector<VeQItemSortDelegate*> mSortDelegates;
 

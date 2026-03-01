@@ -9,11 +9,6 @@ VeQItemTableModel::VeQItemTableModel(Flags flags, QObject *parent) :
 	mCompleted(false)
 {
 	setFlagsNoSignal(flags);
-
-	// qt 5 has roleNames as virtual and setRoleNames is removed
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-	setRoleNames(roleNames());
-#endif
 }
 
 void VeQItemTableModel::addItem(VeQItem *item)

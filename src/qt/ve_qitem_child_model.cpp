@@ -1,14 +1,6 @@
 #include <QtGlobal>
-
-#if defined(QT_QML_LIB)
 #include <QQmlContext>
 #include <QQmlEngine>
-#define QDeclarativeContext QQmlContext
-#define QDeclarativeEngine QQmlEngine
-#elif defined(QT_DECLARATIVE_LIB)
-#include <QDeclarativeContext>
-#include <QDeclarativeEngine>
-#endif
 
 #include <veutil/qt/ve_qitem_child_model.hpp>
 
@@ -52,11 +44,6 @@ VeQItemChildModel::VeQItemChildModel(QObject *parent) :
 	mSortDelegate(nullptr)
 {
 	updateSortValueColumn();
-
-	// qt 5 has roleNames as virtual and setRoleNames is removed
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-	setRoleNames(roleNames());
-#endif
 }
 
 void VeQItemChildModel::setFlags(VeQItemTableModel::Flags flags)
@@ -151,7 +138,7 @@ void VeQItemChildModel::setChildId(const QString &childId)
 		onModelReset();
 }
 
-void VeQItemChildModel::setSortDelegate(QDeclarativeComponent *delegate) {
+void VeQItemChildModel::setSortDelegate(QQmlComponent *delegate) {
 	if (mSortDelegate == delegate)
 		return;
 
@@ -258,7 +245,7 @@ void VeQItemChildModel::createSortDelegate(int n)
 	if (!mSortDelegate)
 		return;
 
-	QDeclarativeContext *context = new QDeclarativeContext(mSortDelegate->creationContext());
+	QQmlContext *context = new QQmlContext(mSortDelegate->creationContext());
 	context->setContextProperty("item", mVector[n]);
 
 	QVariant var = mTableModel->data(mTableModel->index(n, 0), VeQItemTableModel::ItemRole);

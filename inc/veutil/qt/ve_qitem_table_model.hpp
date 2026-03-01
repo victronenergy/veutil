@@ -11,8 +11,6 @@
 #if defined(QT_QML_LIB)
 #include <QQmlParserStatus>
 #define QDeclarativeParserStatus QQmlParserStatus
-#elif defined(QT_DECLARATIVE_LIB)
-#include <QDeclarativeParserStatus>
 #else
 #include <veutil/qt/no_declarative_parser.hpp>
 #endif
@@ -74,12 +72,7 @@ public:
 	QModelIndex parent(const QModelIndex &index) const override;
 	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 	int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-// NOTE: roleNames doesn't exists in qt4 as virtual function
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-	QHash<int, QByteArray> roleNames() const;
-#else
 	QHash<int, QByteArray> roleNames() const override;
-#endif
 	Q_INVOKABLE QVariant getValue(int row, int column);
 
 	void updateModel();

@@ -9,8 +9,6 @@
 #if defined(QT_QML_LIB)
 #include <QQmlParserStatus>
 #define QDeclarativeParserStatus QQmlParserStatus
-#elif defined(QT_DECLARATIVE_LIB)
-#include <QDeclarativeParserStatus>
 #else
 #include <veutil/qt/no_declarative_parser.hpp>
 #endif
@@ -65,11 +63,7 @@ public:
 
 	void setSortRole(int role);
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 	QString filterRegExpStr() { return filterRegularExpression().pattern(); }
-#else
-	QString filterRegExpStr() { return filterRegExp().pattern(); }
-#endif
 	void setFilterRegExp(QString const &regExp);
 
 	Flags filterFlags() { return mFlags; }
@@ -89,11 +83,7 @@ public:
 		return QSortFilterProxyModel::rowCount(parent);
 	}
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 	Q_INVOKABLE void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override {
-#else
-	Q_INVOKABLE void sort(int column, int order = Qt::AscendingOrder) {
-#endif
 		bool columnChanged = sortColumn() != column;
 		QSortFilterProxyModel::sort(column, Qt::SortOrder(order));
 		if (columnChanged)

@@ -346,11 +346,7 @@ void VeQItemExportedDbusService::onDynamicPropertyChanged(char const *name)
 
 void VeQItemExportedDbusService::normalizeVariant(QVariant &v)
 {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-	if (v.userType() == QVariant::Map) {
-#else
 	if (v.userType() == QMetaType::QVariantMap) {
-#endif
 		QVariantMap m = v.toMap();
 		normalizeMap(m);
 	} else if (v.userType() == qMetaTypeId<QDBusVariant>()) {

@@ -15,7 +15,7 @@ HEADERS += \
     $$VE_UTIL_INC/qt/ve_qitem_tree_model.hpp \
     $$VE_UTIL_INC/qt/ve_qitem_utils.hpp \
 
-contains(QT, dbus|qdbus) {
+contains(QT, dbus) {
     SOURCES += \
         $$PWD/ve_qitems_dbus.cpp \
         $$PWD/ve_qitem_exported_dbus_service.cpp \
@@ -27,7 +27,7 @@ contains(QT, dbus|qdbus) {
         $$VE_UTIL_INC/qt/ve_qitem_exported_dbus_services.hpp \
 }
 
-!lessThan(QT_VERSION, 5) | contains(QT, gui) {
+contains(QT, gui) {
     SOURCES += \
         $$PWD/ve_qitem_sort_table_model.cpp \
 
@@ -36,7 +36,7 @@ contains(QT, dbus|qdbus) {
         $$VE_UTIL_INC/qt/ve_sort_filter_proxy_model.hpp \
 }
 
-contains(QT, widgets) | lessThan(QT_VERSION, 5):contains(QT, gui) {
+contains(QT, widgets) {
     INCLUDEPATH += $$PWD/gui
 
     SOURCES += \
@@ -52,7 +52,7 @@ contains(QT, widgets) | lessThan(QT_VERSION, 5):contains(QT, gui) {
         $$PWD/gui/ve_qitem_tree_widget.ui \
 }
 
-contains(QT, declarative|qml) {
+contains(QT, qml) {
     SOURCES += \
         $$PWD/ve_qitem_child_model.cpp \
         $$PWD/ve_quick_item.cpp \

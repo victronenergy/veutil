@@ -70,11 +70,7 @@ void VeQItemSortTableModel::setSortRole(int role) {
 void VeQItemSortTableModel::setFilterRegExp(const QString &regExp) {
 	if (regExp == filterRegExpStr())
 		return;
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 	QSortFilterProxyModel::setFilterRegularExpression(regExp);
-#else
-	QSortFilterProxyModel::setFilterRegExp(regExp);
-#endif
 	emit filterRegExpChanged();
 }
 

@@ -91,11 +91,7 @@ void VeQItemDbus::demarshallVariantForQml(QVariant &variant, QString &signature)
 			qDebug() << "unsupported QDBusArgument, your likely toasted...";
 		}
 	} else {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-		signature = QDBusMetaType::typeToSignature(variant.type());
-#else
 		signature = QDBusMetaType::typeToSignature(QMetaType(variant.typeId()));
-#endif
 	}
 }
 

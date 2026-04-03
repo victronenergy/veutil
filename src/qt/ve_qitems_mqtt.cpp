@@ -5,6 +5,7 @@
 #include <QRandomGenerator>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QSequentialIterable>
 #include <QAssociativeIterable>
 
@@ -860,28 +861,39 @@ void VeQItemMqttProducer::parseMessage(const QString &path, const QByteArray &me
 		// into an integer. That causes problems when trying to set a value back, since
 		// the code makes sure the same type is set again. So for any basic type, which
 		// is the common case, nlohmann is used, so normally the json only needs to be
-		// parsed ones.
+		// parsed once.  It cannot handle arrays, so skip attempting to parse those.
 		bool ok = false;
-		try {
-			nlohmann::json j = nlohmann::json::parse(message.toStdString());
-			value = nlohmannToQVariant(j["value"], ok);
-			if (ok) {
-				min = nlohmannToQVariant(j["min"]);
-				max = nlohmannToQVariant(j["max"]);
-				def = nlohmannToQVariant(j["default"]);
+		if (!message.startsWith(QByteArrayLiteral("[")) && message.contains(QByteArrayLiteral("value"))) {
+			try {
+				nlohmann::json j = nlohmann::json::parse(message.toStdString());
+				value = nlohmannToQVariant(j["value"], ok);
+				if (ok) {
+					min = nlohmannToQVariant(j["min"]);
+					max = nlohmannToQVariant(j["max"]);
+					def = nlohmannToQVariant(j["default"]);
+				}
+			} catch (...) {
+				ok = false;
 			}
-		} catch (const std::exception&) {
-			ok = false;
 		}
 
 		// For arrays and dictonaries the Qt json parser is used, to make sure the object
 		// is compatible with QVariant / Qml. This is an exceptional case though.
 		if (!ok) {
-			QJsonObject obj = QJsonDocument::fromJson(message).object();
-			value = obj.value("value").toVariant();
-			min = obj.value("min").toVariant();
-			max = obj.value("max").toVariant();
-			def = obj.value("default").toVariant();
+			const QJsonDocument doc = QJsonDocument::fromJson(message);
+			if (doc.isObject()) {
+				const QJsonObject obj = doc.object();
+				if (obj.contains(QStringLiteral("value"))) {
+					value = obj.value("value").toVariant();
+					min = obj.value("min").toVariant();
+					max = obj.value("max").toVariant();
+					def = obj.value("default").toVariant();
+				} else {
+					value = obj.toVariantMap();
+				}
+			} else if (doc.isArray()) {
+				value = doc.array().toVariantList();
+			}
 		}
 
 		if (!min.isNull() && min.isValid())

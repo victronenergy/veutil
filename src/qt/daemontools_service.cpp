@@ -211,7 +211,8 @@ void DaemonToolsService::dbusItemChanged()
 void DaemonToolsService::touch(QString fileName)
 {
 	QFile file(fileName);
-	file.open(QIODevice::ReadWrite);
+	if (!file.open(QIODevice::ReadWrite))
+		qCritical() << "could not open" << fileName;
 	file.close();
 }
 

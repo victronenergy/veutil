@@ -133,6 +133,12 @@ SpeedConverter::SpeedConverter() :
 		{ Unit::Knots, new UnitLinear("kt", 0.539957) },
 	}) {}
 
+// Rotation conversions
+RotationConverter::RotationConverter() :
+	UnitConverter(Unit::RevolutionsPerMinute, {
+		{ Unit::RevolutionsPerMinute, new UnitBase("RPM") },
+	}) {}
+
 // Altitude conversions
 AltitudeConverter::AltitudeConverter() :
 	UnitConverter(Unit::Metre, {

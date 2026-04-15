@@ -38,6 +38,7 @@ enum class VenusServiceType
 	DC_DC,
 	DCGENSET,
 	AC_SYSTEM,
+	OPPORTUNITY_LOADS,
 };
 
 VenusServiceType venusServiceType(QString const &serviceName);

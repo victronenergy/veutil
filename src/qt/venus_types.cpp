@@ -108,6 +108,9 @@ VenusServiceType venusServiceType(const QString &serviceName)
 	if (type == "dcdc")
 		return VenusServiceType::DC_DC;
 
+	if (type == "opportunityloads")
+		return VenusServiceType::OPPORTUNITY_LOADS;
+
 	return VenusServiceType::UNKNOWN;
 }
 

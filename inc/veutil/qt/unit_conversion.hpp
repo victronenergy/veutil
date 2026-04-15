@@ -97,6 +97,11 @@ public:
 	AltitudeConverter();
 };
 
+class RotationConverter : public UnitConverter {
+public:
+	RotationConverter();
+};
+
 // The common one.
 class UnitConverters : public QObject {
 	Q_OBJECT
@@ -113,6 +118,7 @@ public:
 	const VolumeConverter volume;
 	const SpeedConverter speed;
 	const AltitudeConverter altitude;
+	const RotationConverter rotation;
 
 	UnitConverter const *get(Unit::Type unit);
 
@@ -137,7 +143,8 @@ private:
 			&temperature,
 			&volume,
 			&speed,
-			&altitude
+			&altitude,
+			&rotation
 		})
 	{}
 };

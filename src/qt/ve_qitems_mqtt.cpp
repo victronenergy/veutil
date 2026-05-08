@@ -79,6 +79,7 @@ VeQItemMqttProducer::VeQItemMqttProducer(
 	  mKeepAliveTimer(new QTimer(this)),
 	  mHeartBeatTimer(new QTimer(this)),
 	  mReadyStateFallbackTimer(new QTimer(this)),
+	  mSubscriptionStateTimer(new QTimer(this)),
 	  mMqttConnection(nullptr),
 	  mPort(0),
 	  mVrmPortalMode(Unknown),
@@ -186,6 +187,7 @@ bool VeQItemMqttProducer::isValidStateTransition(ConnectionState from, Connectio
 		case Identified:
 			return to == Initializing
 				|| to == Disconnected
+				|| to == Failed
 				|| to == Idle;
 		case Initializing:
 			return to == Ready
@@ -426,9 +428,37 @@ void VeQItemMqttProducer::transitionState()
 					qWarning() << "MQTT: previous subscription was not cleared! FIXME!";
 				}
 				mMqttSubscription = mMqttConnection->subscribe(QStringLiteral("N/%1/#").arg(mPortalId));
+				if (!mMqttSubscription) {
+					qWarning() << "MQTT: unable to subscribe to topics";
+					// it should automatically retry to connect after a minute.
+					enqueueStateTransition({
+						QStringLiteral("Identified"),
+						Identified,
+						Failed,
+						false, // don't set error.
+						QMqttClient::NoError
+					});
+					break;
+				}
+
 				QObject::connect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
 					this, &VeQItemMqttProducer::onSubscriptionMessageReceived, Qt::UniqueConnection);
-				doKeepAlive(/* suppressRepublish = */ false);
+
+				// subscription will most likely be in SubscriptionPending
+				// state until the broker confirms the subscription.
+				if (mMqttSubscription->state() == QMqttSubscription::Subscribed) {
+					qDebug() << "Identified, MQTT subscription ready";
+					doKeepAlive(/* suppressRepublish = */ false);
+				} else {
+					qDebug() << "Identified, waiting for MQTT subscription";
+					QObject::connect(mMqttSubscription.data(), &QMqttSubscription::stateChanged,
+						this, &VeQItemMqttProducer::onSubscriptionStateChanged, Qt::UniqueConnection);
+					QObject::connect(mSubscriptionStateTimer, &QTimer::timeout,
+						this, &VeQItemMqttProducer::doInitialSubscriptionKeepAlive, Qt::UniqueConnection);
+					mSubscriptionStateTimer->setInterval(3000);
+					mSubscriptionStateTimer->setSingleShot(true);
+					mSubscriptionStateTimer->start();
+				}
 				break;
 			}
 
@@ -613,10 +643,14 @@ void VeQItemMqttProducer::stop()
 	mKeepAliveTimer->stop();
 	mHeartBeatTimer->stop();
 	mReadyStateFallbackTimer->stop();
+	mSubscriptionStateTimer->stop();
+	disconnect(mSubscriptionStateTimer, &QTimer::timeout, this, &VeQItemMqttProducer::doInitialSubscriptionKeepAlive);
 	if (mMqttSubscription.data()) {
 		mMqttSubscription->unsubscribe();
 		QObject::disconnect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
 			this, &VeQItemMqttProducer::onSubscriptionMessageReceived);
+		QObject::disconnect(mMqttSubscription.data(), &QMqttSubscription::stateChanged,
+			this, &VeQItemMqttProducer::onSubscriptionStateChanged);
 		mMqttSubscription.clear();
 	}
 }
@@ -676,6 +710,23 @@ void VeQItemMqttProducer::onMessageReceived(const QByteArray &message, const QMq
 					<< topicName << " -> " << QString::fromUtf8(message);
 			}
 		}
+	}
+}
+
+void VeQItemMqttProducer::doInitialSubscriptionKeepAlive()
+{
+	mSubscriptionStateTimer->stop();
+	if (mMqttSubscription) {
+		disconnect(mMqttSubscription.data(), &QMqttSubscription::stateChanged, this, &VeQItemMqttProducer::onSubscriptionStateChanged);
+	}
+	doKeepAlive(/* suppressRepublish = */ false);
+}
+
+void VeQItemMqttProducer::onSubscriptionStateChanged(QMqttSubscription::SubscriptionState state)
+{
+	if (state == QMqttSubscription::Subscribed) {
+		qDebug() << "Identified, MQTT subscription acknowledged";
+		doInitialSubscriptionKeepAlive();
 	}
 }
 
@@ -1064,6 +1115,8 @@ void VeQItemMqttProducer::deleteMqttConnection()
 		mMqttSubscription->unsubscribe();
 		QObject::disconnect(mMqttSubscription.data(), &QMqttSubscription::messageReceived,
 			this, &VeQItemMqttProducer::onSubscriptionMessageReceived);
+		QObject::disconnect(mMqttSubscription.data(), &QMqttSubscription::stateChanged,
+			this, &VeQItemMqttProducer::onSubscriptionStateChanged);
 		mMqttSubscription.clear();
 	}
 	if (mMqttConnection) {

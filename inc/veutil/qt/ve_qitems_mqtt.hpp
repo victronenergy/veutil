@@ -146,6 +146,8 @@ private Q_SLOTS:
 	void onStateChanged(QMqttClient::ClientState state);
 	void onMessageReceived(const QByteArray &message, const QMqttTopicName &topic);
 	void onSubscriptionMessageReceived(const QMqttMessage &message);
+	void onSubscriptionStateChanged(QMqttSubscription::SubscriptionState state);
+	void doInitialSubscriptionKeepAlive();
 	void doKeepAlive(bool suppressRepublish = false);
 
 private:
@@ -174,6 +176,7 @@ private:
 	QTimer *mKeepAliveTimer;
 	QTimer *mHeartBeatTimer;
 	QTimer *mReadyStateFallbackTimer;
+	QTimer *mSubscriptionStateTimer;
 	QMqttClient *mMqttConnection;
 	QPointer<QMqttSubscription> mMqttSubscription;
 #ifdef MQTT_WEBSOCKETS_ENABLED

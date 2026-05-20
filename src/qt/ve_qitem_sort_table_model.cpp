@@ -82,6 +82,14 @@ void VeQItemSortTableModel::setFilterFlags(VeQItemSortTableModel::Flags flags) {
 	invalidateFilter();
 }
 
+void VeQItemSortTableModel::setFilterExcludedValue(const QVariant &excludedValue) {
+	if (mFilterExcludedValue == excludedValue)
+		return;
+	mFilterExcludedValue = excludedValue;
+	emit filterExcludedValueChanged();
+	invalidateFilter();
+}
+
 bool VeQItemSortTableModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
 {
 	if (!QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent))
@@ -91,6 +99,12 @@ bool VeQItemSortTableModel::filterAcceptsRow(int source_row, const QModelIndex &
 		return true;
 
 	QModelIndex index = sourceModel()->index(source_row, 0, source_parent);
+
+	if (mFlags.testFlag(FilterExcludesValue)) {
+		QVariant value = sourceModel()->data(index, VeQItemTableModel::ValueRole);
+		if (value == mFilterExcludedValue)
+			return false;
+	}
 
 	if (mFlags.testFlag(FilterInvalid)) {
 		QVariant value = sourceModel()->data(index, VeQItemTableModel::ValueRole);

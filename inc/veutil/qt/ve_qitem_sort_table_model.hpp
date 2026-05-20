@@ -25,6 +25,7 @@ class VeQItemSortTableModel : public QSortFilterProxyModel, public QDeclarativeP
 	Q_ENUMS(Flags)
 	Q_PROPERTY(Flags filterFlags READ filterFlags WRITE setFilterFlags NOTIFY filterFlagsChanged)
 	Q_PROPERTY(QString filterRegExp READ filterRegExpStr WRITE setFilterRegExp NOTIFY filterRegExpChanged)
+	Q_PROPERTY(QVariant filterExcludedValue READ filterExcludedValue WRITE setFilterExcludedValue NOTIFY filterExcludedValueChanged)
 	Q_PROPERTY(VeQItemTableModel *model READ model WRITE setModel NOTIFY modelChanged)
 	Q_PROPERTY(bool dynamicSortFilter READ dynamicSortFilter WRITE setDynamicSortFilter NOTIFY dynamicSortFilterChanged)
 	Q_PROPERTY(int sortRole READ sortRole WRITE setSortRole NOTIFY sortRoleChanged)
@@ -36,6 +37,7 @@ public:
 		None = 0,
 		FilterInvalid = 1,
 		FilterOffline = 2,
+		FilterExcludesValue = 4,
 	};
 
 	Q_DECLARE_FLAGS(Flags, Flag)
@@ -74,6 +76,9 @@ public:
 	Flags filterFlags() { return mFlags; }
 	void setFilterFlags(Flags flags);
 
+	QVariant filterExcludedValue() const { return mFilterExcludedValue; }
+	void setFilterExcludedValue(const QVariant &v);
+
 	Q_INVOKABLE int sortColumn() {
 		return QSortFilterProxyModel::sortColumn();
 	}
@@ -100,6 +105,7 @@ public:
 signals:
 	void filterRegExpChanged();
 	void filterFlagsChanged();
+	void filterExcludedValueChanged();
 	void modelChanged();
 	void dynamicSortFilterChanged();
 	void sortRoleChanged();
@@ -110,6 +116,7 @@ private:
 	bool mCompleted;
 	VeQItemTableModel *mTableModel;
 	Flags mFlags;
+	QVariant mFilterExcludedValue;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(VeQItemSortTableModel::Flags)

@@ -149,6 +149,17 @@ AltitudeConverter::AltitudeConverter() :
 		{ Unit::NauticalMile, new UnitLinear("NM", 0.000539957) },
 	}) {}
 
+// Energy per distance conversions
+EnergyPerDistanceConverter::EnergyPerDistanceConverter() :
+	UnitConverter(Unit::WattHourPerKilometre, {
+		{ Unit::WattHourPerKilometre, new UnitBase("Wh/km") },
+		{ Unit::WattHourPerMile, new UnitLinear("Wh/mi", 0.621371) },
+		{ Unit::WattHourPerNauticalMile, new UnitLinear("Wh/NM", 0.539957) },
+		{ Unit::AmpHourPerKilometre, new UnitBase("Ah/km") },
+		{ Unit::AmpHourPerMile, new UnitLinear("Ah/mi", 0.621371) },
+		{ Unit::AmpHourPerNauticalMile, new UnitLinear("Ah/NM", 0.539957) },
+	}) {}
+
 const UnitConverter *UnitConverters::get(Unit::Type unit)
 {
 	for (auto quantity : mUnitConverters)

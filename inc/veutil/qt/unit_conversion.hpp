@@ -44,6 +44,14 @@ public:
 		Foot,
 		Mile,
 		NauticalMile,
+
+		// Energy per distance
+		WattHourPerKilometre,
+		WattHourPerMile,
+		WattHourPerNauticalMile,
+		AmpHourPerKilometre,
+		AmpHourPerMile,
+		AmpHourPerNauticalMile,
 	};
 };
 
@@ -102,6 +110,11 @@ public:
 	RotationConverter();
 };
 
+class EnergyPerDistanceConverter : public UnitConverter {
+public:
+	EnergyPerDistanceConverter();
+};
+
 // The common one.
 class UnitConverters : public QObject {
 	Q_OBJECT
@@ -119,6 +132,7 @@ public:
 	const SpeedConverter speed;
 	const AltitudeConverter altitude;
 	const RotationConverter rotation;
+	const EnergyPerDistanceConverter energyPerDistance;
 
 	UnitConverter const *get(Unit::Type unit);
 
@@ -144,7 +158,8 @@ private:
 			&volume,
 			&speed,
 			&altitude,
-			&rotation
+			&rotation,
+			&energyPerDistance,
 		})
 	{}
 };

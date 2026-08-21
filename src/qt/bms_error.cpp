@@ -10,6 +10,7 @@ QString BmsError::getDescription(int errorNumber)
 		result += tr("No error");
 		break;
 	case VE_VDATA_BMS_ERROR_BATTERY_INIT:
+	case VE_VDATA_BMS_ERROR_INITIALIZING:
 		result += tr("Battery initialization error");
 		break;
 	case VE_VDATA_BMS_ERROR_NO_BATTERY_FOUND:
@@ -68,6 +69,8 @@ QString BmsError::getDescription(int errorNumber)
 		result += tr("Battery comm. error");
 		break;
 	case VE_VDATA_BMS_ERROR_PRE_CHARGE:
+	case VE_VDATA_BMS_ERROR_PRECHARGE_FAILED:
+	case VE_VDATA_BMS_ERROR_VLOAD_HIGH_BEFORE_PRECHARGE:
 		result += tr("Pre-Charge error");
 		break;
 	case VE_VDATA_BMS_ERROR_CONTACTOR:
@@ -110,11 +113,27 @@ QString BmsError::getDescription(int errorNumber)
 	case VE_VDATA_BMS_ERROR_COMMUNICATION_TIMEOUT:
 		result += tr("Communication timeout");
 		break;
-	case VE_VDATA_BMS_ERROR_SAFETY_LOCK:
+	case VE_VDATA_BMS_ERROR_SAFETY_LOCK: // MGE
+	case VE_VDATA_BMS_ERROR_BATTERY_SAFETY_LOCK: // VE
 		result += tr("Safety lock");
 		break;
 	case VE_VDATA_BMS_ERROR_TERMINAL_OVER_TEMPERATURE:
 		result += tr("Terminal over temperature");
+		break;
+	case VE_VDATA_BMS_ERROR_HIGH_CELL_VOLTAGE:
+		result += tr("High cell voltage");
+		break;
+	case VE_VDATA_BMS_ERROR_EXTERNAL_DISCONNECTION:
+		result += tr("External disconnection");
+		break;
+	case VE_VDATA_BMS_ERROR_UNALLOWED_BATTERY_VOLTAGE:
+		result += tr("Battery voltage not allowed");
+		break;
+	case VE_VDATA_BMS_ERROR_OC_STATUS_TRIGGERED:
+		result += tr("Over current");
+		break;
+	case VE_VDATA_BMS_ERROR_VBAT_ADC_DIG_MISMATCH:
+		result += tr("Battery voltage measurement mismatch");
 		break;
 	}
 

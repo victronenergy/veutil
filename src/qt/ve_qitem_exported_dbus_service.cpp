@@ -220,15 +220,20 @@ bool VeQItemExportedDbusService::handleGetItems(const QDBusMessage &message,
 			m.insert("Text", item->getText());
 
 			QVariant v;
-			v = item->itemProperty("min");
-			if (v.isValid())
-				m.insert("Min", v); // No need to denormalize as v is valid
-			v = item->itemProperty("max");
-			if (v.isValid())
-				m.insert("Max", v);
-			v = item->itemProperty("defaultValue");
-			if (v.isValid())
-				m.insert("Default", v);
+			for (const QString &key : item->dynamicPropertyNames()) {
+				v = item->itemProperty(key.toUtf8().constData());
+				if (v.isValid()) {
+					if (key == "min")
+						m.insert("Min", v); // No need to denormalize as v is valid
+					else if (key == "max")
+						m.insert("Max", v);
+					else if (key == "defaultValue")
+						m.insert("Default", v);
+					else
+						m.insert(key, v);
+				}
+			}
+			
 			items.insert(item->getRelId(mRoot), m);
 		}
 	});

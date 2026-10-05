@@ -85,12 +85,12 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 	profile->addService(rvc);
 	mProfiles.append(profile);
 
-	profile = new CanBusProfile(500000, this);
+	profile = new CanBusProfile(500000, 1000000, this);
 	profile->addService(hvCanBus);
 	mProfiles.append(profile);
 
 	// Debug, bring up the interface (500kbit), but not the services
-	profile = new CanBusProfile(500000, this);
+	profile = new CanBusProfile(500000, 1000000, this);
 	mProfiles.append(profile);
 
 	profile = new CanBusProfile(250000, this);

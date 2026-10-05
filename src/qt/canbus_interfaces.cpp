@@ -4,8 +4,14 @@
 #include <veutil/qt/canbus_interfaces.hpp>
 
 CanBusProfile::CanBusProfile(int bitrate, QObject *parent) :
+	CanBusProfile(bitrate, 0, parent)
+{
+}
+
+CanBusProfile::CanBusProfile(int bitrate, int dataBitRate, QObject *parent) :
 	QObject(parent),
-	mBitRate(bitrate)
+	mBitRate(bitrate),
+	mDataBitRate(dataBitRate)
 {
 }
 
@@ -108,13 +114,16 @@ CanBusProfiles::~CanBusProfiles()
 	mInterfaceItem->itemDelete();
 }
 
-void CanBusProfiles::changeCanBusBitRate(int bitrate)
+void CanBusProfiles::changeCanBusBitRate(int bitrate, int dataBitrate)
 {
 	QProcess proc;
 
-	qDebug() << "[CanBus] Bitrate change for" << mInterface << ":" << QString::number(bitrate);
+	qDebug() << "[CanBus] Bitrate change for" << mInterface << ":" << QString::number(bitrate)
+			 << "data bitrate:" << QString::number(dataBitrate);
 
 	QStringList args = QStringList() << mInterface << QString::number(bitrate);
+	if (dataBitrate)
+		args << QString::number(dataBitrate);
 	proc.start("can-set-rate", args);
 	proc.waitForFinished();
 }
@@ -134,7 +143,7 @@ void CanBusProfiles::dbusItemChanged()
 			mActiveProfile->disableProfile();
 
 		mActiveProfile = mProfiles[index];
-		changeCanBusBitRate(mActiveProfile->bitrate());
+		changeCanBusBitRate(mActiveProfile->bitrate(), mActiveProfile->dataBitRate());
 		mActiveProfile->enableProfile();
 	}
 }

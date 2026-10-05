@@ -87,16 +87,19 @@ public:
 	};
 
 	CanBusProfile(int bitrate, QObject *parent = 0);
+	CanBusProfile(int bitrate, int dataBitRate, QObject *parent = 0);
 	void addService(CanBusService *service) { mServices.append(service); }
 
 	void enableProfile() const;
 	void disableProfile() const;
 
 	int bitrate() const { return mBitRate; }
+	int dataBitRate() const { return mDataBitRate; }
 
 private:
 	QList<CanBusService *> mServices;
 	const int mBitRate;
+	const int mDataBitRate;
 };
 
 class CanBusProfiles : public QObject
@@ -140,7 +143,7 @@ private slots:
 	void onPollTimer();
 
 private:
-	void changeCanBusBitRate(int speed);
+	void changeCanBusBitRate(int speed, int dataBitRate);
 	void checkSpiStats();
 	void checkFailed();
 

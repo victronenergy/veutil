@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QHash>
 #include <QObject>
 #include <QTimer>
 #include <veutil/qt/daemontools_service.hpp>
@@ -34,7 +35,9 @@ class CanBusService : public DaemonToolsService
 public:
 	CanBusService(QString const &kind, QString const &interface, QObject *parent = 0) :
 		DaemonToolsService("/service/" + kind + "." + interface, parent),
-		mProfileEnabled(false)
+		mProfileEnabled(false),
+		mKind(kind),
+		mInterface(interface)
 	{
 		setCanArgs(kind, interface);
 	}
@@ -42,19 +45,29 @@ public:
 	CanBusService(VeQItemSettings *settings, QString const &kind, QString const &interface,
 				  const QList<QString> &dbusObjectPathList, QObject *parent = 0) :
 		DaemonToolsService("/service/" + kind + "." + interface, parent),
-		mProfileEnabled(false)
+		mProfileEnabled(false),
+		mKind(kind),
+		mInterface(interface)
 	{
 		mDbusObjectPathList.append(dbusObjectPathList);
 		initSettings(settings);
 		setCanArgs(kind, interface);
 	}
 
-	void setCanArgs(QString const &kind, QString const &interface)
+	// extraArgs are additional command line arguments for the service. The service
+	// template must have an EXTRA_ARGS (optional) parameter for that, see svectl.
+	void setCanArgs(QString const &kind, QString const &interface, QStringList const &extraArgs = QStringList())
 	{
-		setSveCtlArgs(QStringList() <<
+		QStringList args = QStringList() <<
 						"-s" << kind <<
-						"-D" << "DEV=" + interface);
+						"-D" << "DEV=" + interface;
+		if (!extraArgs.isEmpty())
+			args << "-D" << "EXTRA_ARGS=" + extraArgs.join(' ');
+		setSveCtlArgs(args);
 	}
+
+	// Only applied when the service is (re)installed.
+	void setExtraArgs(QStringList const &args) { setCanArgs(mKind, mInterface, args); }
 
 	void setProfileEnabled(bool enabled) { mProfileEnabled = enabled; }
 	void checkStart();
@@ -64,6 +77,8 @@ protected slots:
 
 private:
 	bool mProfileEnabled;
+	QString const mKind;
+	QString const mInterface;
 };
 
 class CanBusProfile : public QObject
@@ -88,7 +103,7 @@ public:
 
 	CanBusProfile(int bitrate, QObject *parent = 0);
 	CanBusProfile(int bitrate, int dataBitRate, QObject *parent = 0);
-	void addService(CanBusService *service) { mServices.append(service); }
+	void addService(CanBusService *service, QStringList const &extraArgs = QStringList());
 
 	void enableProfile() const;
 	void disableProfile() const;
@@ -98,6 +113,7 @@ public:
 
 private:
 	QList<CanBusService *> mServices;
+	QHash<CanBusService *, QStringList> mExtraArgs;
 	const int mBitRate;
 	const int mDataBitRate;
 };

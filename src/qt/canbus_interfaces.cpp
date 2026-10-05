@@ -15,9 +15,16 @@ CanBusProfile::CanBusProfile(int bitrate, int dataBitRate, QObject *parent) :
 {
 }
 
+void CanBusProfile::addService(CanBusService *service, QStringList const &extraArgs)
+{
+	mServices.append(service);
+	mExtraArgs.insert(service, extraArgs);
+}
+
 void CanBusProfile::enableProfile() const
 {
 	for (CanBusService *service: mServices) {
+		service->setExtraArgs(mExtraArgs.value(service));
 		service->setProfileEnabled(true);
 		service->checkStart();
 	}

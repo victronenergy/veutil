@@ -87,6 +87,7 @@ CanBusProfiles::CanBusProfiles(VeQItemSettings *settings, VeQItem *service, QStr
 
 	profile = new CanBusProfile(500000, 1000000, this);
 	profile->addService(hvCanBus);
+	profile->addService(vecan, {"--no-vecan-out", "--no-n2k-alerts"});
 	mProfiles.append(profile);
 
 	// Debug, bring up the interface (500kbit), but not the services
